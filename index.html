@@ -8,6 +8,7 @@
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
+<script src="game-core.js"></script>
 <meta name="theme-color" content="#0d2246">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1413,6 +1414,24 @@ body.calm .creature,body.calm .col.completed-col{animation:none !important}
 body.victory .bubbles-container,body.victory .god-rays,body.victory .swimmer{display:none}
 body.victory .creature,body.victory .col.completed-col{animation:none !important}
 body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(3,10,22,.9)}
+/* ---- Günün Oyunu sıralaması ---- */
+input{user-select:text;-webkit-user-select:text}
+#dailyPill{cursor:pointer}
+.win-board{width:100%;display:flex;flex-direction:column;gap:8px;margin:2px 0 8px}
+.win-board-status{font-size:13px;line-height:1.45;color:#cbd5e1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;text-align:center}
+.win-board-status.ok{color:#ffd166;border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.1);font-weight:700}
+.win-board-status.warn{color:#ffb4a2;border-color:rgba(255,120,100,.4)}
+.name-row{display:flex;gap:8px;justify-content:center;align-items:center;flex-wrap:wrap}
+.name-row input{flex:1 1 140px;min-width:0;font:inherit;font-size:14px;color:#fff;background:rgba(6,17,36,.7);border:1px solid rgba(100,175,255,.35);border-radius:10px;padding:9px 12px;outline:none}
+.name-row input:focus{border-color:#00d2ff;box-shadow:0 0 8px rgba(0,210,255,.35)}
+.board-list{display:flex;flex-direction:column;gap:4px;max-height:44vh;overflow-y:auto;width:100%}
+.board-row{display:grid;grid-template-columns:34px 1fr auto auto;gap:10px;align-items:center;padding:7px 10px;border-radius:10px;background:rgba(6,17,36,.55);border:1px solid rgba(255,255,255,.07);font-size:13px}
+.board-row.me{border-color:rgba(255,209,102,.6);background:rgba(255,209,102,.1)}
+.board-rank{text-align:center;font-weight:800;color:#8bb3e8}
+.board-name{font-weight:700;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.board-moves{color:#ffd166;font-weight:700;font-variant-numeric:tabular-nums}
+.board-time{color:#00d2ff;font-weight:700;font-variant-numeric:tabular-nums}
+.board-msg{text-align:center;font-size:13px;color:var(--ink-muted);padding:6px 4px;min-height:8px}
 /* Mobile & Tablet Adjustments */
 @media (max-width: 600px) {
   :root {
@@ -1534,6 +1553,9 @@ body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;backgro
         <button class="btn btn-util" id="soundBtn" title="Sesi Aç / Kapat (M)">
           <span class="btn-icon">🔊</span>
         </button>
+        <button class="btn btn-util" id="boardBtn" title="Günün Sıralaması (L)">
+          <span class="btn-icon">📊</span>
+        </button>
         <button class="btn btn-util" id="achieveBtn" title="Başarımlar ve Rozetler (B)">
           <span class="btn-icon">🏅</span>
         </button>
@@ -1647,6 +1669,18 @@ body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;backgro
 
     <div id="winRecordCallout" class="win-record-banner"></div>
 
+    <div id="winBoard" class="win-board" style="display:none;">
+      <div id="winBoardStatus" class="win-board-status"></div>
+      <div id="winNameRow" class="name-row" style="display:none;">
+        <input id="winNameInput" type="text" maxlength="16" placeholder="Takma adın" autocomplete="nickname" aria-label="Takma ad">
+        <button class="btn btn-primary" id="winNameSubmit" style="padding:8px 14px;font-size:13px;">Gönder</button>
+      </div>
+      <div class="name-row">
+        <button class="btn btn-secondary" id="winRetry" style="display:none;">🔄 Tekrar dene</button>
+        <button class="btn btn-secondary" id="winBoardOpen">📊 Günün Sıralaması</button>
+      </div>
+    </div>
+
     <div class="win-actions">
       <button class="btn btn-primary" id="winPlayAgain">🎲 Yeniden Oyna</button>
       <button class="btn" id="winDaily">📅 Günün Oyunu</button>
@@ -1688,6 +1722,30 @@ body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;backgro
     </div>
     <div class="modal-actions" style="justify-content: center;">
       <button class="btn btn-primary" id="closeAchievementsBtn">Kapat ✕</button>
+    </div>
+  </div>
+</div>
+
+<!-- Günün Sıralaması Modal -->
+<div class="modal-overlay" id="boardModal">
+  <div class="modal-card" style="max-width: 480px;">
+    <div class="modal-header">
+      <h2 class="modal-title" style="color: #ffd166;">🏆 Günün Sıralaması</h2>
+      <p class="modal-subtitle" id="boardSub">Herkes için aynı oyun • en az hamle, eşitlikte en kısa süre</p>
+    </div>
+    <div class="name-row">
+      <input id="boardNameInput" type="text" maxlength="16" placeholder="Takma adın" autocomplete="nickname" aria-label="Takma ad">
+      <button class="btn" id="boardNameSave">Kaydet</button>
+    </div>
+    <div id="boardPending" class="win-board-status warn" style="display:none;">
+      Gönderilemeyen bir sonucun var.
+      <button class="btn btn-secondary" id="boardPendingSend" style="margin-left:6px;padding:4px 10px;min-height:0;">Şimdi gönder</button>
+    </div>
+    <div class="board-msg" id="boardMsg"></div>
+    <div class="board-list" id="boardList"></div>
+    <div class="modal-actions" style="justify-content: center;">
+      <button class="btn btn-secondary" id="boardRefresh">🔄 Yenile</button>
+      <button class="btn btn-primary" id="boardClose">Kapat ✕</button>
     </div>
   </div>
 </div>
@@ -2002,6 +2060,17 @@ var droppingInfo = null; // Physics sway animation tracker
 var gameOver = false;
 
 var currentGameMode = "normal"; // "normal" or "daily"
+var actionLog = [];   // Günün Oyunu sıralaması için hamle kaydı
+var startDeal = null; // oyunun başlangıç dağıtımı (kaydı doğrulamak için)
+var logValid = true;
+function logMove(c){
+  if(sel.kind === 'slot') actionLog.push(['s', sel.i, c]);
+  else actionLog.push(['m', sel.c, sel.i, c]);
+}
+function logSlotMove(i){
+  if(sel.kind === 'slot') actionLog.push(['z', sel.i, i]);
+  else actionLog.push(['k', sel.c, i]);
+}
 var hasUsedUndo = false;
 var isAutoFinishing = false;
 var autoFinishTimer = null;
@@ -2065,46 +2134,25 @@ function renderAchievementsModal(){
 /* ==============================================================
    DAILY CHALLENGE RANDOM GENERATOR
    ============================================================== */
-function getDailySeed(){
-  var d = new Date();
-  return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate();
-}
-
-function createSeededRandom(seed) {
-  var s = seed >>> 0;
-  return function() {
-    s += 0x6D2B79F5;
-    var t = Math.imul(s ^ (s >>> 15), 1 | s);
-    t ^= t + Math.imul(t ^ (t >>> 7), 61 | t) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
 var randomGenerator = Math.random;
-
-function shuffle(a){
-  for(var i=a.length-1;i>0;i--){
-    var j=Math.floor(randomGenerator()*(i+1));
-    var t=a[i];a[i]=a[j];a[j]=t;
-  }
-  return a;
-}
+var currentDailyKey = null;
 
 function startDailyGame(){
   currentGameMode = "daily";
-  var seed = getDailySeed();
-  randomGenerator = createSeededRandom(seed);
+  currentDailyKey = DenizCore.istanbulDateKey();
+  randomGenerator = DenizCore.createSeededRandom(DenizCore.seedFromKey(currentDailyKey));
   var dailyPill = document.getElementById("dailyPill");
   if(dailyPill) {
     dailyPill.style.display = "inline-flex";
-    var d = new Date();
-    dailyPill.textContent = "📅 Günün Oyunu (" + d.getDate() + "." + (d.getMonth()+1) + ")";
+    var kp = currentDailyKey.split('-');
+    dailyPill.textContent = "📅 Günün Oyunu (" + (+kp[2]) + "." + (+kp[1]) + ")";
   }
   init();
 }
 
 function startNormalGame(){
   currentGameMode = "normal";
+  currentDailyKey = null;
   randomGenerator = Math.random;
   var dailyPill = document.getElementById("dailyPill");
   if(dailyPill) dailyPill.style.display = "none";
@@ -2115,97 +2163,10 @@ function startNormalGame(){
    ÇÖZÜCÜ: Dağıtımın kazanılabilir olduğunu doğrular, ipucu ve çıkmaz tespitinde kullanılır.
    (Gizli kutuları bilen tam bilgili arama; yalnızca tam üst bloğu taşır, bu yüzden temkinlidir.)
    ============================================================== */
-var Solver = (function(){
-  var seen, nodes, limit;
-  function key(cols, slots, ms){
-    var k = cols.map(function(c){ return c.map(function(t){ return t.up ? t.s : String.fromCharCode(97 + t.s); }).join(''); }).sort().join('|');
-    return k + '#' + slots.slice().sort().join('') + ms;
-  }
-  function clone(c){ return c.map(function(x){ return x.map(function(t){ return {s:t.s, up:t.up}; }); }); }
-  function isWon(cols, slots){
-    if(slots.some(function(x){ return x !== null; })) return false;
-    var n = 0;
-    for(var i=0;i<cols.length;i++){
-      var l = cols[i]; if(!l.length) continue; n++;
-      if(l.length !== PER) return false;
-      for(var k=0;k<l.length;k++) if(!l[k].up || l[k].s !== l[0].s) return false;
-    }
-    return n === 9;
-  }
-  function runStart(l){ var i = l.length-1; while(i>0 && l[i-1].up && l[i-1].s === l[i].s) i--; return i; }
-  function apply(cols, slots, ms, mv){
-    var c = clone(cols), s = slots.slice(), m = ms;
-    if(mv.k === 's'){ var t = s[mv.i]; s[mv.i] = null; c[mv.to].push({s:t, up:true}); }
-    else {
-      var l = c[mv.from], run = l.splice(mv.i);
-      if(mv.slot !== undefined) s[mv.slot] = run[0].s;
-      else run.forEach(function(x){ c[mv.to].push(x); });
-      if(l.length){
-        var tp = l[l.length-1];
-        if(!tp.up){ tp.up = true; if(l.length-1 === PER-11 && m < NS+1){ m = NS+1; s.push(null); } }
-      }
-    }
-    return {c:c, s:s, m:m};
-  }
-  function dfs(cols, slots, ms){
-    if(isWon(cols, slots)) return [];
-    if(++nodes > limit) return null;
-    var k = key(cols, slots, ms);
-    if(seen.has(k)) return null;
-    seen.add(k);
-    var moves = [], emptyDone = false, slotFree = slots.indexOf(null);
-    for(var i=0;i<slots.length;i++) if(slots[i] !== null) for(var t=0;t<cols.length;t++){
-      var d = cols[t];
-      if(d.length && d[d.length-1].s === slots[i] && d.length < PER) moves.push({k:'s', i:i, to:t, p:0});
-      else if(!d.length && !emptyDone){ emptyDone = true; moves.push({k:'s', i:i, to:t, p:5}); }
-    }
-    for(var f=0;f<cols.length;f++){
-      var l = cols[f]; if(!l.length) continue;
-      var rs = runStart(l), len = l.length - rs, ed = false;
-      if(rs === 0 && l.length === PER) continue;
-      for(var t2=0;t2<cols.length;t2++){
-        if(t2 === f) continue;
-        var d2 = cols[t2];
-        if(d2.length && d2[d2.length-1].s === l[rs].s && d2.length + len <= PER)
-          moves.push({k:'c', from:f, i:rs, to:t2, p:(rs>0 && !l[rs-1].up) ? 0 : (d2.length >= len ? 1 : 2)});
-        else if(!d2.length && rs > 0 && !ed){ ed = true; moves.push({k:'c', from:f, i:rs, to:t2, p:6}); }
-      }
-      if(len === 1 && slotFree !== -1 && rs > 0 && !l[rs-1].up) moves.push({k:'c', from:f, i:rs, slot:slotFree, p:4});
-    }
-    moves.sort(function(a,b){ return a.p - b.p; });
-    for(var q=0;q<moves.length;q++){
-      var r = apply(cols, slots, ms, moves[q]);
-      var res = dfs(r.c, r.s, r.m);
-      if(res) return [moves[q]].concat(res);
-      if(nodes > limit) return null;
-    }
-    return null;
-  }
-  function solve(cols, slots, ms, lim){
-    seen = new Set(); nodes = 0; limit = lim;
-    var r = dfs(cols, slots, ms);
-    return {sol: r, nodes: nodes, exhausted: !r && nodes <= lim};
-  }
-  return {solve: solve};
-})();
+var Solver = DenizCore.Solver;
 
 function dealSolvable(){
-  var best = null;
-  for(var tries=0; tries<30; tries++){
-    var all = [];
-    SH.forEach(function(s,i){ for(var k=0;k<PER-1;k++) all.push(i); });
-    shuffle(all);
-    var tops = shuffle([0,1,2,3,4,5,6,7,8]), d = [];
-    for(var c=0;c<9;c++){
-      var col = all.slice(c*(PER-1),(c+1)*(PER-1)).map(function(s){ return {s:s, up:false}; });
-      col.push({s:tops[c], up:true});
-      d.push(col);
-    }
-    d.push([]);
-    if(!best) best = d;
-    if(Solver.solve(d, [null,null,null,null], NS, 60000).sol) return d;
-  }
-  return best;
+  return DenizCore.dealSolvable(randomGenerator);
 }
 
 function solverHint(){
@@ -2239,6 +2200,10 @@ function init(){
   if(dModal) dModal.classList.remove('active');
 
   cols = dealSolvable();
+  startDeal = DenizCore.cloneCols(cols);
+  actionLog = [];
+  logValid = true;
+  try { localStorage.setItem('deniz_startdeal', JSON.stringify(startDeal)); } catch(e){}
   
   maxSlots = NS; // 4
   slots=[];
@@ -2282,7 +2247,9 @@ function saveState(){
       moves: moves,
       secondsElapsed: secondsElapsed,
       mode: currentGameMode,
-      usedUndo: hasUsedUndo
+      usedUndo: hasUsedUndo,
+      log: actionLog,
+      dailyKey: currentDailyKey
     }));
   } catch(e){}
 }
@@ -2304,6 +2271,10 @@ function loadSavedState(){
       secondsElapsed = data.secondsElapsed || 0;
       currentGameMode = data.mode || "normal";
       hasUsedUndo = !!data.usedUndo;
+      actionLog = Array.isArray(data.log) ? data.log : [];
+      currentDailyKey = data.dailyKey || null;
+      try { startDeal = JSON.parse(localStorage.getItem('deniz_startdeal') || 'null'); } catch(e){ startDeal = null; }
+      logValid = Array.isArray(data.log) && !!startDeal;
       var dp = document.getElementById("dailyPill");
       if(dp) dp.style.display = currentGameMode === "daily" ? "inline-flex" : "none";
       hist = [];
@@ -2327,6 +2298,7 @@ function undo(){
   moves = moves + 1; // geri al da bir hamle sayılır
   sel = null;
   hasUsedUndo = true;
+  actionLog.push(['u']);
   var dModal = document.getElementById("deadlockModal");
   if(dModal) dModal.classList.remove("active");
   AudioEngine.play('drop');
@@ -2395,6 +2367,7 @@ function tapCol(c,i){
     }
     var t=selTiles(), d=cols[c], top=d[d.length-1];
     if(!d.length || (top.up && top.s===t[0].s && d.length+t.length <= PER)){
+      logMove(c);
       snap();
       takeSel();
       var startIdx = d.length;
@@ -2439,6 +2412,7 @@ function tapSlot(i){
     }
     if(slots[i]===null && selTiles().length===1){
       var s=selTiles()[0].s;
+      logSlotMove(i);
       snap();
       takeSel();
       slots[i]=s;
@@ -2635,7 +2609,9 @@ function checkWin(){
       }
     }
 
-    window._lastWin = { moves: currentMoves, sec: currentSec, daily: currentGameMode === 'daily' };
+    window._lastWin = { moves: currentMoves, sec: currentSec, daily: currentGameMode === 'daily',
+      log: actionLog.slice(), startDeal: startDeal, dailyKey: currentDailyKey, logValid: logValid && !!currentDailyKey };
+    if(window.setupWinBoard) window.setupWinBoard();
     var wd = document.getElementById("winDaily");
     if(wd) wd.style.display = (currentGameMode === 'daily') ? "none" : "inline-flex";
     document.getElementById("winModal").classList.add("active");
@@ -2671,6 +2647,7 @@ function canAutoFinish(){
 function autoFinishCascade(){
   if(isAutoFinishing) return;
   snap();
+  actionLog.push(['a']);
   isAutoFinishing = true;
   var autoBtn = document.getElementById('autoFinishBtn');
   if(autoBtn) autoBtn.disabled = true;
@@ -2692,6 +2669,7 @@ function autoFinishCascade(){
         for(var c=0; c<cols.length; c++){
           var col = cols[c];
           if(col.length > 0 && col[col.length-1].s === sp && col.length < PER){
+            actionLog.push(['S', sIdx, c]);
             sel = { kind: 'slot', i: sIdx };
             takeSel();
             col.push({ s: sp, up: true });
@@ -2718,6 +2696,7 @@ function autoFinishCascade(){
           if(c1 === c2) continue;
           var col2 = cols[c2];
           if(col2.length > 0 && col2[col2.length-1].s === stack[0].s && col2.length + stack.length <= PER){
+            actionLog.push(['M', c1, p.i, c2]);
             sel = p;
             takeSel();
             stack.forEach(function(card){ col2.push(card); });
@@ -2740,9 +2719,11 @@ function autoFinishCascade(){
           if(!isPure){
             var p = pick(c1, col1.length - 1);
             if(p){
+              var movedSp = cols[c1][p.i].s;
+              actionLog.push(['M', c1, p.i, emptyCol]);
               sel = p;
               takeSel();
-              cols[emptyCol].push({ s: p.s, up: true });
+              cols[emptyCol].push({ s: movedSp, up: true });
               moves++;
               AudioEngine.play('autofinish_tick');
               draw();
@@ -3831,6 +3812,197 @@ document.addEventListener('visibilitychange', function(){
 if(!loadSavedState()){
   init();
 }
+</script>
+<script>
+/* ==============================================================
+   GÜNÜN OYUNU SIRALAMASI (istemci tarafı)
+   ============================================================== */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  var PEND_KEY = 'deniz_pending_submit';
+  var cur = null;
+
+  function rndHex(n){ var s = ''; while(s.length < n) s += Math.floor(Math.random() * 16).toString(16); return s; }
+  function playerId(){
+    try {
+      var v = localStorage.getItem('deniz_player_id');
+      if(!v || !/^[A-Za-z0-9_-]{16,64}$/.test(v)){
+        v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID().replace(/-/g, '') : rndHex(32);
+        localStorage.setItem('deniz_player_id', v);
+      }
+      return v;
+    } catch(e){ return window._pidMem || (window._pidMem = rndHex(32)); }
+  }
+  function cleanName(n){ return String(n || '').replace(/[<>&"'`]/g, '').replace(/\s+/g, ' ').trim().slice(0, 16); }
+  function getName(){ try { return cleanName(localStorage.getItem('deniz_player_name') || ''); } catch(e){ return ''; } }
+  function setName(n){ try { localStorage.setItem('deniz_player_name', n); } catch(e){} }
+
+  function api(p, opts){
+    opts = opts || {};
+    var ctl = window.AbortController ? new AbortController() : null;
+    var to = setTimeout(function(){ if(ctl) ctl.abort(); }, 15000);
+    if(ctl) opts.signal = ctl.signal;
+    return fetch('/api' + p, opts).then(function(r){
+      clearTimeout(to);
+      return r.json().then(function(j){ j.httpStatus = r.status; return j; },
+                           function(){ return { ok: false, error: 'bad-response', httpStatus: r.status }; });
+    }, function(e){ clearTimeout(to); throw e; });
+  }
+  var ERR = {
+    'db-not-configured': 'Sıralama sunucusu henüz kurulmamış.',
+    'db': 'Sıralama veritabanına ulaşılamadı, biraz sonra tekrar deneyin.',
+    'invalid-log': 'Oyun kaydı doğrulanamadı.',
+    'too-fast': 'Süre, hamle sayısına göre fazla kısa görünüyor; doğrulanamadı.',
+    'bad-date': 'Bu günün oyunu için gönderim süresi geçmiş.',
+    'bad-name': 'Geçerli bir takma ad girin.',
+    'bad-player': 'Oyuncu kimliği geçersiz.'
+  };
+  function errText(r){ return ERR[r && r.error] || 'Sıralamaya gönderilemedi.'; }
+
+  function savePending(){ try { if(cur) localStorage.setItem(PEND_KEY, JSON.stringify(cur)); } catch(e){} }
+  function clearPending(){ try { localStorage.removeItem(PEND_KEY); } catch(e){} }
+  function getPending(){
+    try {
+      var p = JSON.parse(localStorage.getItem(PEND_KEY) || 'null');
+      if(p && p.log && p.date){
+        var t = DenizCore.istanbulDateKey(), y = DenizCore.istanbulDateKey(new Date(Date.now() - 86400000));
+        if(p.date === t || p.date === y) return p;
+      }
+    } catch(e){}
+    return null;
+  }
+
+  /* ---- gönderim ---- */
+  function send(entry, setS, onNeedName, onRetry){
+    if(!getName()){ if(onNeedName) onNeedName(); return; }
+    setS('Sıralamaya gönderiliyor…');
+    api('/submit', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: entry.date, playerId: playerId(), name: getName(), log: entry.log, sec: entry.sec }) })
+    .then(function(r){
+      if(r && r.ok){
+        clearPending();
+        setS(r.improved
+          ? '🏆 Günün sıralamasında ' + r.rank + '. sıradasın! (' + r.total + ' oyuncu)'
+          : 'Bugünkü en iyin ' + r.best.moves + ' hamle • ' + formatTime(r.best.sec) + ' — şu an ' + r.rank + '. sıradasın.', 'ok');
+      } else if(r && (r.error === 'db' || r.error === 'db-not-configured')){
+        cur = entry; savePending(); setS(errText(r), 'warn'); if(onRetry) onRetry();
+      } else {
+        setS(errText(r), 'warn');
+        if(r && r.error === 'bad-name' && onNeedName) onNeedName();
+      }
+    }, function(){
+      cur = entry; savePending();
+      setS('Sunucuya ulaşılamadı. Bağlantını kontrol edip tekrar dene.', 'warn');
+      if(onRetry) onRetry();
+    });
+  }
+
+  /* ---- kazanma penceresi ---- */
+  function winStatus(t, kind){ var el = $('winBoardStatus'); if(!el) return; el.textContent = t; el.className = 'win-board-status' + (kind ? ' ' + kind : ''); }
+  function showNameRow(){
+    $('winNameRow').style.display = 'flex';
+    setTimeout(function(){ try { $('winNameInput').focus(); } catch(e){} }, 50);
+  }
+  function winSend(){
+    $('winRetry').style.display = 'none';
+    send(cur, winStatus,
+      function(){ winStatus('Sıralamaya girmek için takma adını yaz:'); showNameRow(); },
+      function(){ $('winRetry').style.display = 'inline-flex'; });
+  }
+  window.setupWinBoard = function(){
+    var w = window._lastWin, box = $('winBoard');
+    if(!box) return;
+    if(!w || !w.daily){ box.style.display = 'none'; return; }
+    box.style.display = 'flex';
+    $('winNameRow').style.display = 'none';
+    $('winRetry').style.display = 'none';
+    $('winBoardOpen').onclick = function(){ $('winModal').classList.remove('active'); openBoard(); };
+    if(!w.logValid){ winStatus('Bu oyun eski sürümden devam ettiği için sıralamaya gönderilemedi. Bir sonraki günün oyununu baştan oyna!', 'warn'); return; }
+    var chk = null;
+    try { chk = DenizCore.replay(w.startDeal, w.log); } catch(e){}
+    if(!chk || !chk.ok || chk.moves !== w.moves){
+      console.warn('Oyun kaydı yerel doğrulamadan geçemedi', chk, w.moves);
+      winStatus('Oyun kaydı doğrulanamadı; sonuç sıralamaya gönderilemedi.', 'warn');
+      return;
+    }
+    cur = { date: w.dailyKey, log: w.log, sec: w.sec };
+    winSend();
+  };
+  $('winRetry').onclick = winSend;
+  $('winNameSubmit').onclick = function(){
+    var n = cleanName($('winNameInput').value);
+    if(!n){ showToast('Lütfen bir takma ad yaz.'); return; }
+    setName(n);
+    $('winNameRow').style.display = 'none';
+    winSend();
+  };
+  $('winNameInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') $('winNameSubmit').click(); });
+
+  /* ---- sıralama penceresi ---- */
+  function boardMsg(t){ $('boardMsg').textContent = t || ''; }
+  function updatePending(){
+    var p = getPending();
+    $('boardPending').style.display = p ? 'block' : 'none';
+  }
+  function render(r){
+    var list = $('boardList'); list.textContent = '';
+    var p = r.date.split('-');
+    $('boardSub').textContent = (+p[2]) + '.' + (+p[1]) + '.' + p[0] + ' • ' + r.total + ' oyuncu • en az hamle, eşitlikte en kısa süre';
+    if(!r.entries.length){ boardMsg('Henüz kimse bitirmedi. İlk sen ol! 🌊'); return; }
+    boardMsg(r.myRank && r.myRank > r.entries.length ? 'Senin sıran: ' + r.myRank : '');
+    r.entries.forEach(function(e){
+      var row = document.createElement('div');
+      row.className = 'board-row' + (e.me ? ' me' : '');
+      var rank = e.rank === 1 ? '🥇' : e.rank === 2 ? '🥈' : e.rank === 3 ? '🥉' : String(e.rank);
+      [['board-rank', rank], ['board-name', e.name], ['board-moves', e.moves + ' hamle'], ['board-time', formatTime(e.sec)]].forEach(function(c){
+        var sp = document.createElement('span'); sp.className = c[0]; sp.textContent = c[1]; row.appendChild(sp);
+      });
+      list.appendChild(row);
+    });
+  }
+  function loadBoard(){
+    $('boardList').textContent = '';
+    boardMsg('Yükleniyor…');
+    updatePending();
+    api('/leaderboard?date=' + DenizCore.istanbulDateKey() + '&pid=' + encodeURIComponent(playerId())).then(function(r){
+      if(!r || !r.ok){ boardMsg(errText(r)); return; }
+      render(r);
+    }, function(){ boardMsg('Sunucuya ulaşılamadı. (Yerelde açtıysan sıralama yalnızca yayınlanan sürümde çalışır.)'); });
+  }
+  function openBoard(){
+    $('boardModal').classList.add('active');
+    $('boardNameInput').value = getName();
+    loadBoard();
+  }
+  function closeBoard(){ $('boardModal').classList.remove('active'); }
+
+  $('boardBtn').onclick = openBoard;
+  $('boardClose').onclick = closeBoard;
+  $('boardRefresh').onclick = loadBoard;
+  $('boardModal').addEventListener('click', function(e){ if(e.target === this) closeBoard(); });
+  $('dailyPill').onclick = openBoard;
+  $('boardNameSave').onclick = function(){
+    var n = cleanName($('boardNameInput').value);
+    if(!n){ showToast('Lütfen bir takma ad yaz.'); return; }
+    setName(n); $('boardNameInput').value = n;
+    var done = function(){ loadBoard(); };
+    api('/rename', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ date: DenizCore.istanbulDateKey(), playerId: playerId(), name: n }) }).then(done, done);
+    showToast('Takma ad kaydedildi.');
+  };
+  $('boardNameInput').addEventListener('keydown', function(e){ if(e.key === 'Enter') $('boardNameSave').click(); });
+  $('boardPendingSend').onclick = function(){
+    var p = getPending(); if(!p) return;
+    send(p, function(t){ boardMsg(t); }, function(){ boardMsg('Önce yukarıdan bir takma ad kaydet.'); }, null);
+    setTimeout(function(){ loadBoard(); }, 1200);
+  };
+  window.addEventListener('keydown', function(e){
+    if(e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA')) return;
+    if(e.ctrlKey || e.metaKey || e.altKey) return;
+    if(e.key === 'l' || e.key === 'L') openBoard();
+    else if(e.key === 'Escape') closeBoard();
+  });
+})();
 </script>
 </body>
 </html>

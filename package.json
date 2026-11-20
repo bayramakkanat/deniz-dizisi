@@ -1,0 +1,7 @@
+{
+  "name": "deniz-dizisi",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Deniz Dizisi - okyanus sıralama oyunu (Günün Oyunu sıralaması ile)",
+  "engines": { "node": ">=20" }
+}
