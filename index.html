@@ -1076,7 +1076,7 @@ body {
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 15px rgba(0, 210, 255, 0.25);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  z-index: 1000;
+  z-index: 3000;
   opacity: 0;
   transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
   pointer-events: none;
@@ -1406,6 +1406,13 @@ body.calm .creature,body.calm .col.completed-col{animation:none !important}
 .ic-undo{color:#ffd166}.ic-hint{color:#7de3ff}.ic-new{color:#7ee787}
 .header-divider{display:none}
 .stat-label{display:none}
+.win-actions{display:flex;flex-direction:column;gap:8px;width:100%}
+.win-actions .btn{justify-content:center;width:100%;padding:11px 14px;font-size:14px}
+.win-actions-row{display:flex;gap:8px}
+.win-actions-row .btn{flex:1}
+body.victory .bubbles-container,body.victory .god-rays,body.victory .swimmer{display:none}
+body.victory .creature,body.victory .col.completed-col{animation:none !important}
+body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(3,10,22,.9)}
 /* Mobile & Tablet Adjustments */
 @media (max-width: 600px) {
   :root {
@@ -1640,8 +1647,13 @@ body.calm .creature,body.calm .col.completed-col{animation:none !important}
 
     <div id="winRecordCallout" class="win-record-banner"></div>
 
-    <div class="modal-actions" style="width: 100%; justify-content: center;">
-      <button class="btn btn-primary" id="winPlayAgain">Yeniden Oyna 🔄</button>
+    <div class="win-actions">
+      <button class="btn btn-primary" id="winPlayAgain">🎲 Yeniden Oyna</button>
+      <button class="btn" id="winDaily">📅 Günün Oyunu</button>
+      <div class="win-actions-row">
+        <button class="btn btn-secondary" id="winShare">📤 Paylaş</button>
+        <button class="btn btn-secondary" id="winView">🔍 Tahtayı Gör</button>
+      </div>
     </div>
   </div>
 </div>
@@ -2623,6 +2635,9 @@ function checkWin(){
       }
     }
 
+    window._lastWin = { moves: currentMoves, sec: currentSec, daily: currentGameMode === 'daily' };
+    var wd = document.getElementById("winDaily");
+    if(wd) wd.style.display = (currentGameMode === 'daily') ? "none" : "inline-flex";
     document.getElementById("winModal").classList.add("active");
     startConfetti();
 
@@ -3413,7 +3428,7 @@ function createAmbientBubbles(){
   function tick(now){
     var dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    if(!document.body.classList.contains("calm")){
+    if(!document.body.classList.contains("calm") && !document.body.classList.contains("victory")){
       list.forEach(function(b){
         b.turnIn -= dt;
         if(b.turnIn <= 0){                                       // ara sıra hafif yön değişimi
@@ -3589,6 +3604,33 @@ document.getElementById("winPlayAgain").onclick = function(){
   startNormalGame();
 };
 
+document.getElementById("winDaily").onclick = function(){
+  winModal.classList.remove("active");
+  stopConfetti();
+  startDailyGame();
+};
+
+document.getElementById("winView").onclick = function(){
+  winModal.classList.remove("active");
+  stopConfetti();
+  showToast("Yeni oyun için 'Yeni' düğmesine basın.");
+};
+
+document.getElementById("winShare").onclick = function(){
+  var w = window._lastWin || { moves: moves, sec: secondsElapsed, daily: false };
+  var text = "🌊 Deniz Dizisi" + (w.daily ? " (Günün Oyunu)" : "") + "\n🎯 " + w.moves + " hamle • ⏱️ " + formatTime(w.sec) + "\nSen de dene:";
+  var url = location.href.split('#')[0];
+  if(navigator.share){
+    navigator.share({ title: "Deniz Dizisi", text: text, url: url }).catch(function(){});
+  } else if(navigator.clipboard){
+    navigator.clipboard.writeText(text + " " + url).then(function(){
+      showToast("Sonuç panoya kopyalandı!", "gold");
+    }, function(){ showToast("Kopyalanamadı."); });
+  } else {
+    showToast("Paylaşım bu tarayıcıda desteklenmiyor.");
+  }
+};
+
 // New game with confirmation if game is in progress
 document.getElementById("nw").onclick = function(){
   if(moves > 0){
@@ -3674,46 +3716,60 @@ window.addEventListener("resize", resizeConfetti);
 resizeConfetti();
 
 function startConfetti(){
-  confettiPieces = [];
+  var W = confettiCanvas.width, H = confettiCanvas.height;
+  var small = W < 700;
+  var count = small ? 55 : 110;
   var colors = ["#00d2ff", "#ffd166", "#ff5e7e", "#70e000", "#ffffff", "#b5179e"];
-  for(var i=0; i<120; i++){
+  confettiPieces = [];
+  for(var i=0; i<count; i++){
     confettiPieces.push({
-      x: Math.random() * confettiCanvas.width,
-      y: Math.random() * -confettiCanvas.height,
-      size: Math.random() * 8 + 5,
-      color: colors[Math.floor(Math.random() * colors.length)],
-      speedY: Math.random() * 3 + 2,
-      speedX: Math.random() * 2 - 1,
-      rotation: Math.random() * 360,
-      rotSpeed: Math.random() * 4 - 2
+      x: Math.random() * W,
+      y: -Math.random() * H * 0.6 - 10,
+      size: (small ? 5 : 6) + Math.random() * (small ? 5 : 7),
+      color: colors[i % colors.length],
+      vy: (small ? 110 : 140) + Math.random() * 120,
+      vx: (Math.random() - 0.5) * 70,
+      rot: Math.random() * 6.28,
+      vr: (Math.random() - 0.5) * 6,
+      ph: Math.random() * 6.28
     });
   }
-  if(!confettiAnimId) renderConfetti();
+  document.body.classList.add('victory');
+  confettiStart = confettiLast = performance.now();
+  if(!confettiAnimId) confettiAnimId = requestAnimationFrame(renderConfetti);
 }
 
-function renderConfetti(){
-  confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+var confettiStart = 0, confettiLast = 0;
+function renderConfetti(now){
+  var dt = Math.min(0.05, (now - confettiLast) / 1000);
+  confettiLast = now;
+  var age = (now - confettiStart) / 1000;
+  var W = confettiCanvas.width, H = confettiCanvas.height, alive = 0;
+  confettiCtx.clearRect(0, 0, W, H);
   confettiPieces.forEach(function(p){
-    p.y += p.speedY;
-    p.x += p.speedX;
-    p.rotation += p.rotSpeed;
-    
-    confettiCtx.save();
-    confettiCtx.translate(p.x, p.y);
-    confettiCtx.rotate((p.rotation * Math.PI) / 180);
-    confettiCtx.fillStyle = p.color;
-    confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.7);
-    confettiCtx.restore();
-
-    if(p.y > confettiCanvas.height){
-      p.y = -20;
-      p.x = Math.random() * confettiCanvas.width;
+    p.y += p.vy * dt;
+    p.x += (p.vx + Math.sin(p.ph + age * 2) * 20) * dt;
+    p.rot += p.vr * dt;
+    if(p.y > H + 20){
+      if(age < 4){ p.y = -20; p.x = Math.random() * W; } else return;
     }
+    alive++;
+    var c = Math.cos(p.rot), s = Math.sin(p.rot);
+    confettiCtx.setTransform(c, s, -s, c, p.x, p.y);
+    confettiCtx.fillStyle = p.color;
+    confettiCtx.fillRect(-p.size / 2, -p.size * 0.35, p.size, p.size * 0.7);
   });
-  confettiAnimId = requestAnimationFrame(renderConfetti);
+  confettiCtx.setTransform(1, 0, 0, 1, 0, 0);
+  if(alive > 0 && age < 9){
+    confettiAnimId = requestAnimationFrame(renderConfetti);
+  } else {
+    confettiAnimId = null;
+    confettiCtx.clearRect(0, 0, W, H);
+  }
 }
 
 function stopConfetti(){
+  document.body.classList.remove('victory');
   if(confettiAnimId){
     cancelAnimationFrame(confettiAnimId);
     confettiAnimId = null;
