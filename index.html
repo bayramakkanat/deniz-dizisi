@@ -1430,6 +1430,29 @@ body.calm .creature,body.calm .col.completed-col{animation:none !important}
     border-radius: 8px;
   }
   .t { border-radius: 6px; }
+  /* Mobil üst menü: üstte başlık + araçlar, ortada eylemler, altta hamle/süre + geçici yuvalar */
+  .game-header {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas: "brand util" "actions actions" "stats slots";
+    gap: 8px 6px;
+    align-items: center;
+  }
+  .header-tier-top, .header-tier-bottom { display: contents; }
+  .brand { grid-area: brand; }
+  .util-buttons { grid-area: util; }
+  .action-buttons { grid-area: actions; width: 100%; flex-wrap: wrap; justify-content: center; }
+  .action-buttons .btn { flex: 1 1 0; justify-content: center; padding: 0 8px; }
+  .stats-badge {
+    grid-area: stats;
+    justify-self: start;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    padding: 6px 12px;
+  }
+  .stats-badge .stat-divider { display: none; }
+  .slots-container { grid-area: slots; justify-self: end; }
   .header-tier-top {
     flex-wrap: wrap;
     justify-content: center;
