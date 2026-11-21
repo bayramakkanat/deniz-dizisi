@@ -1443,7 +1443,7 @@ input{user-select:text;-webkit-user-select:text}
   :root {
     --row-w: 0px;
     --t: clamp(20px, calc((100vw - 84px) / 10), 52px);
-    --s: clamp(34px, calc(var(--t) * 1.3), 46px);
+    --s: calc(var(--t) + 4px);
   }
   .app-container { padding: 4px 6px; }
   .game-header { padding: 6px 8px; }
@@ -1475,8 +1475,9 @@ input{user-select:text;-webkit-user-select:text}
     grid-template-areas: "menu stats slots" "pill pill pill";
     gap: 0 8px;
     align-items: center;
-    padding: 6px 8px;
+    padding: 6px 4px;
     margin-bottom: 6px;
+    z-index: 40;
   }
   .header-tier-top, .header-tier-bottom { display: contents; }
   .btn-menu {
@@ -1501,7 +1502,7 @@ input{user-select:text;-webkit-user-select:text}
     padding: 5px 12px;
   }
   .stats-badge .stat-divider { display: none; }
-  .slots-container { grid-area: slots; justify-self: end; }
+  .slots-container { grid-area: slots; justify-self: end; gap: 2px; }
 
   /* ☰ menüsü: ikincil düğmeler açılır panelde */
   .util-buttons {
