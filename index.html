@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Deniz Dizisi - Okyanus Sıralama Oyunu</title>
+<title>Sea Stack - Okyanus Sıralama Oyunu</title>
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
@@ -13,7 +13,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Deniz Dizisi">
+<meta name="apple-mobile-web-app-title" content="Sea Stack">
 <style>
 :root {
   --bg-dark: #071326;
@@ -1443,6 +1443,12 @@ body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;backgro
 .profile-stat{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 6px;text-align:center}
 .profile-stat b{display:block;font-size:18px;color:#fff;font-variant-numeric:tabular-nums}
 .profile-stat span{font-size:11px;color:var(--ink-muted)}
+.first-tip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(88px + env(safe-area-inset-bottom,0px));z-index:45;width:max-content;max-width:min(92vw,420px);padding:10px 16px;border-radius:14px;background:rgba(10,30,60,.95);border:1px solid rgba(0,210,255,.55);color:#e6f6ff;font-size:14px;font-weight:600;text-align:center;box-shadow:0 8px 24px rgba(0,0,0,.45);cursor:pointer}
+@media (min-width:601px){.first-tip{bottom:28px}}
+.win-stars{font-size:34px;letter-spacing:6px;line-height:1;margin:2px 0 6px;min-height:36px}
+.win-stars .off{opacity:.25;filter:grayscale(1)}
+.win-stars-hint{font-size:12px;color:var(--ink-muted);letter-spacing:0;margin-top:6px;line-height:1.3}
+.win-streak{font-size:13px;font-weight:700;color:#ffd166;background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.45);border-radius:12px;padding:8px 12px;margin-bottom:6px}
 .home-close{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:14px;width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:var(--btn-bg);color:#fff;font-size:16px;cursor:pointer}
 /* ---- Günün Oyunu sıralaması ---- */
 input{user-select:text;-webkit-user-select:text}
@@ -1628,7 +1634,7 @@ input{user-select:text;-webkit-user-select:text}
       <button class="btn btn-menu" id="menuBtn" aria-label="Menü" aria-expanded="false" title="Menü">☰</button>
       <div class="brand">
         <span class="brand-icon">🌊</span>
-        <h1 class="brand-title">Deniz Dizisi</h1>
+        <h1 class="brand-title">Sea Stack</h1>
         <span id="dailyPill" class="mode-badge" style="display:none;" title="Günün Özel Oyunu">📅 Günün Oyunu</span>
       </div>
       
@@ -1659,6 +1665,9 @@ input{user-select:text;-webkit-user-select:text}
         </button>
         <button class="btn btn-util" id="soundBtn" data-label="Ses" title="Sesi Aç / Kapat (M)">
           <span class="btn-icon">🔊</span>
+        </button>
+        <button class="btn btn-util" id="hapticBtn" data-label="Titreşim" title="Titreşimi aç / kapat" style="display:none;">
+          <span class="btn-icon">📳</span>
         </button>
         <button class="btn btn-util" id="boardBtn" data-label="Sıralama" title="Günün Sıralaması (L)">
           <span class="btn-icon">📊</span>
@@ -1705,13 +1714,14 @@ input{user-select:text;-webkit-user-select:text}
   <!-- Board Area (Sol Satır Numaraları Sütunu + 10 Oyun Sütunu) -->
   <div id="slotsDock" class="slots-dock"></div>
   <main class="board-container">
-    <div class="board" id="board" role="grid" aria-label="Deniz Dizisi Oyun Alanı"></div>
+    <div class="board" id="board" role="grid" aria-label="Sea Stack Oyun Alanı"></div>
   </main>
 
 </div>
 
 <!-- Mobil alt eylem çubuğu (eylem düğmeleri küçük ekranda buraya taşınır) -->
 <div id="bottomBar" class="bottom-bar"></div>
+<div id="firstTip" class="first-tip" style="display:none;"></div>
 
 <!-- Floating Toast Notification -->
 <div class="toast-banner" id="toast" role="status" aria-live="polite"></div>
@@ -1721,7 +1731,7 @@ input{user-select:text;-webkit-user-select:text}
   <button class="home-close" id="homeClose" aria-label="Kapat">✕</button>
   <div class="home-card">
     <div class="home-logo">🌊</div>
-    <h2 class="home-title">Deniz Dizisi</h2>
+    <h2 class="home-title">Sea Stack</h2>
     <p class="home-sub">Deniz canlılarını sütunlarda topla</p>
     <button class="btn btn-primary home-btn" id="homeContinue" style="display:none;">
       <span class="home-btn-main">▶ Devam Et</span>
@@ -1746,6 +1756,7 @@ input{user-select:text;-webkit-user-select:text}
       <button class="btn home-btn" id="homeHelp"><span class="home-btn-main">❓ Nasıl Oynanır?</span></button>
       <button class="btn home-btn" id="homeFs"><span class="home-btn-main">⛶ Tam Ekran</span></button>
     </div>
+    <button class="btn home-btn" id="homeInstall" style="display:none;"><span class="home-btn-main">📲 Uygulamayı Yükle</span><span class="home-btn-sub">Ana ekrana ekle, çevrimdışı da oyna</span></button>
     <p class="home-hint" id="homeHint" style="display:none;"></p>
   </div>
 </div>
@@ -1795,6 +1806,7 @@ input{user-select:text;-webkit-user-select:text}
       <p class="modal-subtitle">Tüm deniz canlılarını eksiksiz bir şekilde sıraladınız.</p>
     </div>
     
+    <div id="winStars" class="win-stars"></div>
     <div class="win-stats-grid">
       <div class="win-stat-card">
         <div class="win-stat-label">🎯 Hamle</div>
@@ -1809,6 +1821,7 @@ input{user-select:text;-webkit-user-select:text}
     </div>
 
     <div id="winRecordCallout" class="win-record-banner"></div>
+    <div id="winStreak" class="win-streak" style="display:none;"></div>
 
     <div id="winBoard" class="win-board" style="display:none;">
       <div id="winBoardStatus" class="win-board-status"></div>
@@ -1857,7 +1870,7 @@ input{user-select:text;-webkit-user-select:text}
   <div class="modal-card" style="max-width: 520px;">
     <div class="modal-header">
       <h2 class="modal-title" style="color: #ffd166;">🏅 Okyanus Başarımları</h2>
-      <p class="modal-subtitle">Deniz Dizisi'ndeki ustalık seviyeniz ve kazandığınız rozetler</p>
+      <p class="modal-subtitle">Sea Stack'teki ustalık seviyeniz ve kazandığınız rozetler</p>
     </div>
     <div class="achievements-grid" id="achievementsList">
       <!-- Injected via JS -->
@@ -2224,10 +2237,12 @@ var actionLog = [];   // Günün Oyunu sıralaması için hamle kaydı
 var startDeal = null; // oyunun başlangıç dağıtımı (kaydı doğrulamak için)
 var logValid = true;
 function logMove(c){
+  if(window.hideTip) hideTip(true);
   if(sel.kind === 'slot') actionLog.push(['s', sel.i, c]);
   else actionLog.push(['m', sel.c, sel.i, c]);
 }
 function logSlotMove(i){
+  if(window.hideTip) hideTip(true);
   if(sel.kind === 'slot') actionLog.push(['z', sel.i, i]);
   else actionLog.push(['k', sel.c, i]);
 }
@@ -2239,7 +2254,7 @@ var autoFinishTimer = null;
    ACHIEVEMENTS SYSTEM
    ============================================================== */
 var ACHIEVEMENTS_DEF = [
-  { id: 'first_win', icon: '🏆', title: 'İlk Zafer', desc: 'Deniz Dizisi oyununu ilk kez tamamla.' },
+  { id: 'first_win', icon: '🏆', title: 'İlk Zafer', desc: 'Sea Stack oyununu ilk kez tamamla.' },
   { id: 'unlock_r11', icon: '🤿', title: 'Derin Dalgıç', desc: '11. satırdaki kilitli kutuyu aç ve 5. yuvayı kazan.' },
   { id: 'no_undo', icon: '🧠', title: 'Usta Kaptan', desc: 'Hiç "Geri Al" kullanmadan oyunu kazan.' },
   { id: 'speed_3m', icon: '⚡', title: 'Manta Hızı', desc: 'Oyunu 3 dakikanın altında tamamla.' },
@@ -2773,6 +2788,7 @@ function checkWin(){
       log: actionLog.slice(), startDeal: startDeal, dailyKey: currentDailyKey, logValid: logValid && !!currentDailyKey };
     if(window.setupWinBoard) window.setupWinBoard();
     if(currentGameMode === 'daily' && currentDailyKey){ try { localStorage.setItem('deniz_daily_done', currentDailyKey); } catch(e){} }
+    if(window.onGameWon) window.onGameWon(currentGameMode === 'daily', currentDailyKey, currentMoves, currentSec);
     var wd = document.getElementById("winDaily");
     if(wd) wd.style.display = (currentGameMode === 'daily') ? "none" : "inline-flex";
     document.getElementById("winModal").classList.add("active");
@@ -3422,6 +3438,7 @@ function refreshSelection(){
     el.classList.toggle('sel', !!sel && sel.kind === 'slot' && sel.i === i);
     el.classList.toggle('drop-valid', !!sel && s === null && t.length === 1);
   });
+  if(window.tipSel) tipSel(!!sel);
 }
 
 /* 11. Satır ile 5. Kilitli Yuva Arasındaki Etkileşimli Vurgulama */
@@ -3758,10 +3775,10 @@ document.getElementById("winView").onclick = function(){
 
 document.getElementById("winShare").onclick = function(){
   var w = window._lastWin || { moves: moves, sec: secondsElapsed, daily: false };
-  var text = "🌊 Deniz Dizisi" + (w.daily ? " (Günün Oyunu)" : "") + "\n🎯 " + w.moves + " hamle • ⏱️ " + formatTime(w.sec) + "\nSen de dene:";
+  var text = "🌊 Sea Stack" + (w.daily ? " (Günün Oyunu)" : "") + (w.stars ? " " + "⭐".repeat(w.stars) : "") + "\n🎯 " + w.moves + " hamle • ⏱️ " + formatTime(w.sec) + (w.daily && w.streak > 1 ? " • 🔥 " + w.streak + " gün seri" : "") + "\nSen de dene:";
   var url = location.href.split('#')[0];
   if(navigator.share){
-    navigator.share({ title: "Deniz Dizisi", text: text, url: url }).catch(function(){});
+    navigator.share({ title: "Sea Stack", text: text, url: url }).catch(function(){});
   } else if(navigator.clipboard){
     navigator.clipboard.writeText(text + " " + url).then(function(){
       showToast("Sonuç panoya kopyalandı!", "gold");
@@ -4176,6 +4193,143 @@ if(!loadSavedState()){
 })();
 </script>
 <script>
+/* ==============================================================
+   SEA STACK EKLERİ: yıldızlar, günlük seri, ilk oyun ipucu, titreşim, çevrimdışı
+   ============================================================== */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  function readJSON(k, d){ try { var v = JSON.parse(localStorage.getItem(k) || 'null'); return v == null ? d : v; } catch(e){ return d; } }
+  function writeJSON(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
+
+  /* ---- Yıldızlar (hamle sayısına göre; eşikler ilk tahmindir, gerçek sonuçlara göre ayarlanabilir) ---- */
+  var STAR3 = 100, STAR2 = 140;
+  function starsFor(m){ return m <= STAR3 ? 3 : (m <= STAR2 ? 2 : 1); }
+
+  /* ---- Günlük seri ---- */
+  function dayDiff(a, b){
+    var pa = a.split('-'), pb = b.split('-');
+    return Math.round((Date.UTC(+pa[0], +pa[1] - 1, +pa[2]) - Date.UTC(+pb[0], +pb[1] - 1, +pb[2])) / 86400000);
+  }
+  function readStreak(){ var s = readJSON('deniz_streak', null); return (s && s.last) ? s : { last: null, count: 0, best: 0 }; }
+  function currentStreak(){
+    var s = readStreak();
+    if(!s.last) return 0;
+    return dayDiff(DenizCore.istanbulDateKey(), s.last) <= 1 ? s.count : 0;
+  }
+  window.getDailyStreak = currentStreak;
+  window.getDailyStats = function(){
+    var log = readJSON('deniz_daily_log', {}), days = 0, stars = 0;
+    Object.keys(log).forEach(function(k){ days++; stars += (log[k].stars || 0); });
+    return { streak: currentStreak(), best: readStreak().best || 0, days: days, stars: stars };
+  };
+
+  window.onGameWon = function(isDaily, key, mv, sec){
+    var stars = starsFor(mv), streak = 0;
+    var se = $('winStars');
+    if(se){
+      se.textContent = '';
+      for(var i = 0; i < 3; i++){
+        var sp = document.createElement('span');
+        sp.textContent = '⭐';
+        if(i >= stars) sp.className = 'off';
+        se.appendChild(sp);
+      }
+      if(stars < 3){
+        var h = document.createElement('div');
+        h.className = 'win-stars-hint';
+        h.textContent = (stars === 1 ? (STAR2 + ' hamle ve altı') : (STAR3 + ' hamle ve altı')) + ' ' + (stars + 1) + ' yıldız getirir';
+        se.appendChild(h);
+      }
+    }
+    var st = $('winStreak');
+    if(st) st.style.display = 'none';
+    if(isDaily && key){
+      var s = readStreak(), d = s.last ? dayDiff(key, s.last) : null, extended = false;
+      if(d === null || d > 1){ s.count = 1; s.last = key; extended = true; }
+      else if(d === 1){ s.count += 1; s.last = key; extended = true; }
+      if(s.count > (s.best || 0)) s.best = s.count;
+      writeJSON('deniz_streak', s);
+      streak = s.count;
+      var log = readJSON('deniz_daily_log', {}), old = log[key];
+      var rec = { moves: mv, sec: sec };
+      if(old && (old.moves < mv || (old.moves === mv && old.sec <= sec))) rec = { moves: old.moves, sec: old.sec };
+      rec.stars = starsFor(rec.moves);
+      log[key] = rec;
+      var keys = Object.keys(log).sort();
+      while(keys.length > 90) delete log[keys.shift()];
+      writeJSON('deniz_daily_log', log);
+      if(st){
+        st.textContent = '🔥 ' + streak + ' günlük seri' + (extended && streak > 1 ? ' — devam ediyor!' : '') + (s.best > streak ? ' • En uzun: ' + s.best : '');
+        st.style.display = 'block';
+      }
+    }
+    if(window._lastWin){ window._lastWin.stars = stars; window._lastWin.streak = streak; }
+  };
+
+  /* ---- İlk oyun ipucu ---- */
+  var TIP_KEY = 'deniz_tip_seen', tipTimer = null;
+  function tipSeen(){ try { return localStorage.getItem(TIP_KEY) === '1'; } catch(e){ return true; } }
+  window.hideTip = function(done){
+    var el = $('firstTip');
+    if(el) el.style.display = 'none';
+    if(tipTimer){ clearTimeout(tipTimer); tipTimer = null; }
+    if(done){ try { localStorage.setItem(TIP_KEY, '1'); } catch(e){} }
+  };
+  window.maybeShowTip = function(){
+    var el = $('firstTip');
+    if(!el || tipSeen() || moves > 0 || gameOver) return;
+    el.textContent = '👆 Bir canlıya dokun, sonra gideceği sütuna dokun';
+    el.style.display = 'block';
+    if(tipTimer) clearTimeout(tipTimer);
+    tipTimer = setTimeout(function(){ hideTip(false); }, 15000);
+  };
+  window.tipSel = function(has){
+    var el = $('firstTip');
+    if(!el || el.style.display === 'none') return;
+    el.textContent = has ? '👉 Şimdi aynı canlının üstüne ya da boş bir sütuna dokun' : '👆 Bir canlıya dokun, sonra gideceği sütuna dokun';
+  };
+  if($('firstTip')) $('firstTip').onclick = function(){ hideTip(true); };
+
+  /* ---- Titreşim (Android; iPhone Safari desteklemez) ---- */
+  var supported = !!navigator.vibrate;
+  var hOn = true;
+  try { hOn = localStorage.getItem('deniz_haptics') !== 'off'; } catch(e){}
+  var PATTERNS = {
+    select: 6, drop: 14, flip: 10, hint: 8, deadlock: 60,
+    unlock: [20, 40, 20, 40, 30], complete_col: [18, 40, 18], error: [25, 40, 25],
+    win: [40, 60, 40, 60, 100], achievement: [30, 50, 30]
+  };
+  function vib(p){ if(supported && hOn){ try { navigator.vibrate(p); } catch(e){} } }
+  function updateHapticBtn(){
+    var b = $('hapticBtn');
+    if(!b) return;
+    b.style.display = supported ? '' : 'none';
+    b.style.opacity = hOn ? '1' : '0.5';
+    b.title = hOn ? 'Titreşimi kapat' : 'Titreşimi aç';
+  }
+  if($('hapticBtn')) $('hapticBtn').onclick = function(){
+    hOn = !hOn;
+    try { localStorage.setItem('deniz_haptics', hOn ? 'on' : 'off'); } catch(e){}
+    updateHapticBtn();
+    if(hOn) vib(15);
+    showToast(hOn ? 'Titreşim açık.' : 'Titreşim kapalı.');
+  };
+  updateHapticBtn();
+  if(window.AudioEngine && AudioEngine.play){
+    var origPlay = AudioEngine.play;
+    AudioEngine.play = function(type){
+      if(PATTERNS[type] !== undefined) vib(PATTERNS[type]);
+      return origPlay.apply(this, arguments);
+    };
+  }
+
+  /* ---- Çevrimdışı oynama ---- */
+  if('serviceWorker' in navigator && location.protocol.indexOf('http') === 0){
+    window.addEventListener('load', function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); });
+  }
+})();
+</script>
+<script>
 /* Mobil arayüz: ☰ menüsü + alt eylem çubuğu */
 (function(){
   var header = document.querySelector('.game-header');
@@ -4213,7 +4367,7 @@ if(!loadSavedState()){
   }
   if(utils){
     utils.addEventListener('click', function(e){
-      if(e.target.closest('#fxBtn, #soundBtn')) return; // efekt/ses değişince menü açık kalsın
+      if(e.target.closest('#fxBtn, #soundBtn, #hapticBtn')) return; // efekt/ses değişince menü açık kalsın
       setTimeout(closeMenu, 0);
     });
   }
@@ -4230,7 +4384,7 @@ if(!loadSavedState()){
 </script>
 <script>
 /* ==============================================================
-   ANA MENÜ (mobilde açılışta gösterilir; 🏠 düğmesiyle her zaman açılabilir)
+   ANA MENÜ (açılışta gösterilir; 🏠 düğmesiyle her zaman açılabilir)
    ============================================================== */
 (function(){
   function $(id){ return document.getElementById(id); }
@@ -4286,6 +4440,10 @@ if(!loadSavedState()){
       [fmtT(numKey('deniz_dizisi_best_time_daily')), 'Günün Oyunu • süre'],
       [numKey('deniz_dizisi_best_moves_daily') || '--', 'Günün Oyunu • hamle']
     ];
+    if(window.getDailyStats){
+      var ds = getDailyStats();
+      items.push(['🔥 ' + ds.streak, 'Günlük seri'], [ds.best, 'En uzun seri'], [ds.days, 'Tamamlanan gün'], ['⭐ ' + ds.stars, 'Günlük yıldız']);
+    }
     items.forEach(function(it){
       var d = document.createElement('div'); d.className = 'profile-stat';
       var b = document.createElement('b'); b.textContent = String(it[0]);
@@ -4321,12 +4479,15 @@ if(!loadSavedState()){
     }
     var kp = todayKey().split('-'), done = false;
     try { done = localStorage.getItem('deniz_daily_done') === todayKey(); } catch(e){}
+    var streak = window.getDailyStreak ? getDailyStreak() : 0;
+    var fire = streak > 0 ? ' • 🔥 ' + streak + ' gün seri' + (done ? '' : ' – bugün oyna!') : '';
     $('homeDailySub').textContent = done
-      ? '✓ Bugün tamamladın • tekrar deneyebilirsin'
-      : (+kp[2]) + '.' + (+kp[1]) + ' • Herkes için aynı • sıralamaya gir';
+      ? '✓ Bugün tamamladın' + fire
+      : (+kp[2]) + '.' + (+kp[1]) + ' • Herkes için aynı' + fire;
   }
   function show(){
     refresh();
+    if(window.hideTip) hideTip(false);
     if(!gameOver) stopTimer(); // menüdeyken süre ilerlemesin
     home.classList.add('active');
   }
@@ -4334,6 +4495,7 @@ if(!loadSavedState()){
     home.classList.remove('active');
     disarm();
     if(resume !== false && inProgress()) startTimerOnce();
+    setTimeout(function(){ if(window.maybeShowTip) maybeShowTip(); }, 500);
   }
 
   $('homeContinue').onclick = function(){ hide(true); };
@@ -4388,6 +4550,20 @@ if(!loadSavedState()){
     hint.textContent = 'Tam ekran için: Paylaş ▸ Ana Ekrana Ekle';
     hint.style.display = 'block';
   }
+
+  /* Uygulamayı yükle (Android/Chrome, masaüstü) */
+  var deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function(e){
+    e.preventDefault();
+    deferredInstall = e;
+    $('homeInstall').style.display = 'flex';
+  });
+  $('homeInstall').onclick = function(){
+    if(!deferredInstall) return;
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(function(){ deferredInstall = null; $('homeInstall').style.display = 'none'; });
+  };
+  window.addEventListener('appinstalled', function(){ deferredInstall = null; $('homeInstall').style.display = 'none'; });
 
   home.classList.remove('launch');
   show();
