@@ -12,6 +12,7 @@
 <meta name="theme-color" content="#0d2246">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Deniz Dizisi">
 <style>
 :root {
@@ -48,6 +49,8 @@ html, body {
   min-height: 100dvh;
   overflow-x: hidden;
   touch-action: manipulation;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
   background: var(--bg-dark);
   background-image: var(--bg-gradient);
   color: var(--ink);
@@ -131,7 +134,7 @@ body {
   width: 100%;
   max-width: 1300px;
   min-height: 100dvh;
-  padding: 4px 12px;
+  padding: calc(4px + env(safe-area-inset-top, 0px)) calc(12px + env(safe-area-inset-right, 0px)) 4px calc(12px + env(safe-area-inset-left, 0px));
   margin: auto;
   box-sizing: border-box;
 }
@@ -1414,6 +1417,9 @@ body.calm .creature,body.calm .col.completed-col{animation:none !important}
 body.victory .bubbles-container,body.victory .god-rays,body.victory .swimmer{display:none}
 body.victory .creature,body.victory .col.completed-col{animation:none !important}
 body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(3,10,22,.9)}
+/* ---- Mobil arayüz bileşenleri (yalnızca küçük ekranda görünür) ---- */
+.bottom-bar{display:none}
+.btn-menu{display:none}
 /* ---- Günün Oyunu sıralaması ---- */
 input{user-select:text;-webkit-user-select:text}
 #dailyPill{cursor:pointer}
@@ -1456,42 +1462,104 @@ input{user-select:text;-webkit-user-select:text}
     border-radius: 8px;
   }
   .t { border-radius: 6px; }
-  /* Mobil üst menü: üstte başlık + araçlar, ortada eylemler, altta hamle/süre + geçici yuvalar */
+  /* Mobil: ince üst çubuk (☰ menü | hamle-süre | geçici yuvalar); eylemler altta, başparmak erişiminde */
+  .app-container {
+    justify-content: flex-start;
+    padding: calc(4px + env(safe-area-inset-top, 0px)) calc(6px + env(safe-area-inset-right, 0px)) calc(76px + env(safe-area-inset-bottom, 0px)) calc(6px + env(safe-area-inset-left, 0px));
+  }
+  .board-container { flex: 1 1 auto; }
   .game-header {
+    position: relative;
     display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-areas: "brand util" "actions actions" "stats slots";
-    gap: 8px 6px;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "menu stats slots" "pill pill pill";
+    gap: 0 8px;
     align-items: center;
+    padding: 6px 8px;
+    margin-bottom: 6px;
   }
   .header-tier-top, .header-tier-bottom { display: contents; }
-  .brand { grid-area: brand; }
-  .util-buttons { grid-area: util; }
-  .action-buttons { grid-area: actions; width: 100%; flex-wrap: wrap; justify-content: center; }
-  .action-buttons .btn { flex: 1 1 0; justify-content: center; padding: 0 8px; }
+  .btn-menu {
+    display: inline-flex;
+    grid-area: menu;
+    width: 42px;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 !important;
+    font-size: 20px;
+  }
+  .brand { display: contents; }
+  .brand-icon, .brand-title { display: none; }
+  #dailyPill { grid-area: pill; justify-self: center; margin-top: 4px; font-size: 11px; padding: 2px 10px; }
+  .mode-badge::before { content: none; }
   .stats-badge {
     grid-area: stats;
-    justify-self: start;
+    justify-self: center;
     flex-direction: column;
     align-items: flex-start;
     gap: 3px;
-    padding: 6px 12px;
+    padding: 5px 12px;
   }
   .stats-badge .stat-divider { display: none; }
   .slots-container { grid-area: slots; justify-self: end; }
-  .header-tier-top {
-    flex-wrap: wrap;
-    justify-content: center;
-    gap: 6px;
-  }
-  .header-tier-bottom {
+
+  /* ☰ menüsü: ikincil düğmeler açılır panelde */
+  .util-buttons {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    z-index: 60;
     flex-wrap: wrap;
     justify-content: center;
     gap: 8px;
+    padding: 10px;
+    background: rgba(10, 24, 48, 0.97);
+    border: 1px solid var(--board-border);
+    border-radius: 14px;
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
   }
-  .slots-container {
+  .game-header.menu-open .util-buttons { display: flex; }
+  .btn.btn-util {
+    width: auto;
+    min-width: 0;
+    height: auto;
+    min-height: 58px;
+    flex: 1 1 28%;
+    flex-direction: column;
+    gap: 3px;
+    padding: 8px 4px !important;
+  }
+  .btn.btn-util::after {
+    content: attr(data-label);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--ink-muted);
+  }
+
+  /* Alt eylem çubuğu */
+  .bottom-bar {
+    display: block;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    padding: 8px calc(10px + env(safe-area-inset-right, 0px)) calc(8px + env(safe-area-inset-bottom, 0px)) calc(10px + env(safe-area-inset-left, 0px));
+    background: rgba(8, 20, 40, 0.94);
+    border-top: 1px solid var(--board-border);
+  }
+  .bottom-bar .action-buttons { width: 100%; gap: 8px; justify-content: center; }
+  .bottom-bar .action-buttons .btn {
+    flex: 1 1 0;
+    height: 48px;
+    max-height: none;
+    font-size: 14px;
     justify-content: center;
+    padding: 0 6px;
   }
+  .toast-banner { bottom: calc(86px + env(safe-area-inset-bottom, 0px)); }
 }
 </style>
 </head>
@@ -1522,6 +1590,7 @@ input{user-select:text;-webkit-user-select:text}
     
     <!-- Tier 1: Branding, Stats & Utility Buttons -->
     <div class="header-tier-top">
+      <button class="btn btn-menu" id="menuBtn" aria-label="Menü" aria-expanded="false" title="Menü">☰</button>
       <div class="brand">
         <span class="brand-icon">🌊</span>
         <h1 class="brand-title">Deniz Dizisi</h1>
@@ -1547,22 +1616,22 @@ input{user-select:text;-webkit-user-select:text}
       </div>
 
       <div class="util-buttons">
-        <button class="btn btn-util" id="fxBtn" title="Arka plan efektlerini aç / kapat">
+        <button class="btn btn-util" id="fxBtn" data-label="Efekt" title="Arka plan efektlerini aç / kapat">
           <span class="btn-icon">✨</span>
         </button>
-        <button class="btn btn-util" id="soundBtn" title="Sesi Aç / Kapat (M)">
+        <button class="btn btn-util" id="soundBtn" data-label="Ses" title="Sesi Aç / Kapat (M)">
           <span class="btn-icon">🔊</span>
         </button>
-        <button class="btn btn-util" id="boardBtn" title="Günün Sıralaması (L)">
+        <button class="btn btn-util" id="boardBtn" data-label="Sıralama" title="Günün Sıralaması (L)">
           <span class="btn-icon">📊</span>
         </button>
-        <button class="btn btn-util" id="achieveBtn" title="Başarımlar ve Rozetler (B)">
+        <button class="btn btn-util" id="achieveBtn" data-label="Başarımlar" title="Başarımlar ve Rozetler (B)">
           <span class="btn-icon">🏅</span>
         </button>
-        <button class="btn btn-util" id="helpBtn" title="Nasıl Oynanır?">
+        <button class="btn btn-util" id="helpBtn" data-label="Yardım" title="Nasıl Oynanır?">
           <span class="btn-icon">❓</span>
         </button>
-        <button class="btn btn-util" id="fs" title="Tam Ekran Modu (F)">
+        <button class="btn btn-util" id="fs" data-label="Tam ekran" title="Tam Ekran Modu (F)">
           <span class="btn-icon">⛶</span>
         </button>
       </div>
@@ -1601,6 +1670,9 @@ input{user-select:text;-webkit-user-select:text}
   </main>
 
 </div>
+
+<!-- Mobil alt eylem çubuğu (eylem düğmeleri küçük ekranda buraya taşınır) -->
+<div id="bottomBar" class="bottom-bar"></div>
 
 <!-- Floating Toast Notification -->
 <div class="toast-banner" id="toast" role="status" aria-live="polite"></div>
@@ -3814,7 +3886,9 @@ updateBestTimeDisplay();
    ============================================================== */
 var fxBtn = document.getElementById('fxBtn');
 function applyFx(){
-  var on = localStorage.getItem('deniz_fx') !== 'off';
+  var pref = localStorage.getItem('deniz_fx');
+  // Telefonda efektler varsayılan olarak kapalı (sakin görünüm); ✨ ile açılabilir
+  var on = pref ? pref !== 'off' : !(window.matchMedia && window.matchMedia('(max-width: 600px)').matches);
   document.body.classList.toggle('calm', !on);
   fxBtn.style.opacity = on ? 1 : 0.5;
 }
@@ -4029,6 +4103,55 @@ if(!loadSavedState()){
     if(e.key === 'l' || e.key === 'L') openBoard();
     else if(e.key === 'Escape') closeBoard();
   });
+})();
+</script>
+<script>
+/* Mobil arayüz: ☰ menüsü + alt eylem çubuğu */
+(function(){
+  var header = document.querySelector('.game-header');
+  var menuBtn = document.getElementById('menuBtn');
+  var actions = document.querySelector('.action-buttons');
+  var tierBottom = document.querySelector('.header-tier-bottom');
+  var bar = document.getElementById('bottomBar');
+  var utils = document.querySelector('.util-buttons');
+  var mq = window.matchMedia ? window.matchMedia('(max-width: 600px)') : null;
+
+  function closeMenu(){
+    if(!header) return;
+    header.classList.remove('menu-open');
+    if(menuBtn) menuBtn.setAttribute('aria-expanded', 'false');
+  }
+  function place(){
+    if(!actions || !tierBottom || !bar) return;
+    if(mq && mq.matches){
+      if(actions.parentNode !== bar) bar.appendChild(actions);
+    } else {
+      if(actions.parentNode !== tierBottom) tierBottom.insertBefore(actions, tierBottom.firstChild);
+      closeMenu();
+    }
+  }
+  if(menuBtn){
+    menuBtn.addEventListener('click', function(e){
+      e.stopPropagation();
+      var open = header.classList.toggle('menu-open');
+      menuBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    });
+  }
+  if(utils){
+    utils.addEventListener('click', function(e){
+      if(e.target.closest('#fxBtn, #soundBtn')) return; // efekt/ses değişince menü açık kalsın
+      setTimeout(closeMenu, 0);
+    });
+  }
+  document.addEventListener('click', function(e){
+    if(header && header.classList.contains('menu-open') && !e.target.closest('.util-buttons')) closeMenu();
+  });
+  window.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeMenu(); });
+  if(mq){
+    if(mq.addEventListener) mq.addEventListener('change', place);
+    else if(mq.addListener) mq.addListener(place);
+  }
+  place();
 })();
 </script>
 </body>
