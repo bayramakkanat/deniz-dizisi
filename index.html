@@ -2258,7 +2258,7 @@ var ACHIEVEMENTS_DEF = [
   { id: 'unlock_r11', icon: '🤿', title: 'Derin Dalgıç', desc: '11. satırdaki kilitli kutuyu aç ve 5. yuvayı kazan.' },
   { id: 'no_undo', icon: '🧠', title: 'Usta Kaptan', desc: 'Hiç "Geri Al" kullanmadan oyunu kazan.' },
   { id: 'speed_3m', icon: '⚡', title: 'Manta Hızı', desc: 'Oyunu 3 dakikanın altında tamamla.' },
-  { id: 'moves_65', icon: '🎯', title: 'Kusursuz Hamle', desc: 'Oyunu 65 veya daha az hamleyle bitir.' },
+  { id: 'moves_115', icon: '🎯', title: 'Kusursuz Hamle', desc: 'Oyunu 115 veya daha az hamleyle bitir.' },
   { id: 'double_record', icon: '👑', title: 'Çifte Şampiyon', desc: 'Aynı oyunda hem süre hem hamle rekoru kır.' },
   { id: 'win_3', icon: '🐬', title: 'Okyanus Fatihi', desc: 'Toplamda 3 galibiyete ulaş.' },
   { id: 'daily_win', icon: '📅', title: 'Günün Yıldızı', desc: 'Günün Oyunu mücadelesini başarıyla tamamla.' }
@@ -2798,7 +2798,7 @@ function checkWin(){
     unlockAchievement('first_win');
     if(!hasUsedUndo) unlockAchievement('no_undo');
     if(currentSec < 180) unlockAchievement('speed_3m');
-    if(currentMoves <= 65) unlockAchievement('moves_65');
+    if(currentMoves <= 115) unlockAchievement('moves_115');
     if(isTimeRecord && isMovesRecord && !isFirstWin) unlockAchievement('double_record');
     if(currentGameMode === 'daily') unlockAchievement('daily_win');
 
@@ -4202,7 +4202,7 @@ if(!loadSavedState()){
   function writeJSON(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch(e){} }
 
   /* ---- Yıldızlar (hamle sayısına göre; eşikler ilk tahmindir, gerçek sonuçlara göre ayarlanabilir) ---- */
-  var STAR3 = 100, STAR2 = 140;
+  var STAR3 = 130, STAR2 = 165;
   function starsFor(m){ return m <= STAR3 ? 3 : (m <= STAR2 ? 2 : 1); }
 
   /* ---- Günlük seri ---- */

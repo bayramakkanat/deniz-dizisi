@@ -3,7 +3,7 @@
    - görseller/ikonlar: önbellekten (arka planda yenilenir)
    - /api/ istekleri hiç önbelleğe alınmaz (sıralama her zaman canlı)
    Görsel dosyalar (assets/, icons/) değişirse VERSION değerini artırın. */
-const VERSION = 'v1';
+const VERSION = 'v2';
 const CACHE = 'seastack-' + VERSION;
 const CORE = [
   './',
