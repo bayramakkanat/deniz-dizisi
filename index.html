@@ -1420,6 +1420,24 @@ body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;backgro
 /* ---- Mobil arayüz bileşenleri (yalnızca küçük ekranda görünür) ---- */
 .bottom-bar{display:none}
 .btn-menu{display:none}
+.slots-dock{display:none}
+/* ---- Ana menü ---- */
+.home-screen{position:fixed;inset:0;z-index:1800;display:none;align-items:center;justify-content:center;padding:calc(16px + env(safe-area-inset-top,0px)) 16px calc(16px + env(safe-area-inset-bottom,0px));background-color:var(--bg-dark);background-image:var(--bg-gradient)}
+.home-screen.active{display:flex}
+.home-screen.launch{display:none}
+@media (max-width:600px){.home-screen.launch{display:flex}}
+.home-card{width:100%;max-width:360px;display:flex;flex-direction:column;gap:10px;text-align:center}
+.home-logo{font-size:56px;line-height:1;filter:drop-shadow(0 0 12px rgba(0,210,255,.6))}
+.home-title{font-size:30px;font-weight:800;background:linear-gradient(135deg,#fff 30%,#a5d8ff 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.home-sub{font-size:14px;color:var(--ink-muted);margin-bottom:8px}
+.home-btn{width:100%;min-height:54px;flex-direction:column;gap:2px;font-size:16px;padding:10px 14px;border-radius:14px;white-space:normal !important}
+.home-btn-main{font-weight:800}
+.home-btn-sub{font-size:12px;font-weight:600;opacity:.8}
+.home-btn-daily{background:linear-gradient(135deg,rgba(255,209,102,.22),rgba(255,183,3,.1));border-color:rgba(255,209,102,.5);color:#ffd166}
+.home-btn.armed{border-color:#ff8a8a;color:#ffb4a2}
+.home-row{display:flex;gap:10px}
+.home-row .home-btn{flex:1;font-size:14px}
+.home-close{position:absolute;top:calc(12px + env(safe-area-inset-top,0px));right:14px;width:40px;height:40px;border-radius:12px;border:1px solid rgba(255,255,255,.16);background:var(--btn-bg);color:#fff;font-size:16px;cursor:pointer}
 /* ---- Günün Oyunu sıralaması ---- */
 input{user-select:text;-webkit-user-select:text}
 #dailyPill{cursor:pointer}
@@ -1467,12 +1485,30 @@ input{user-select:text;-webkit-user-select:text}
     justify-content: flex-start;
     padding: calc(4px + env(safe-area-inset-top, 0px)) calc(6px + env(safe-area-inset-right, 0px)) calc(76px + env(safe-area-inset-bottom, 0px)) calc(6px + env(safe-area-inset-left, 0px));
   }
-  .board-container { flex: 1 1 auto; }
+  .board-container { flex: 0 0 auto; margin-bottom: auto; }
+  /* Geçici yuvalar tahtanın hemen üstünde (JS ile buraya taşınır); yuva + tahta dikeyde birlikte ortalanır */
+  .slots-dock {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    max-width: var(--board-max-w);
+    margin-top: auto;
+    padding: 0 5px 6px;
+  }
+  .slots-dock::before {
+    content: "📥 Geçici yuvalar";
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--ink-muted);
+    opacity: 0.85;
+  }
+  .slots-dock .slots-container { gap: 2px; }
   .game-header {
     position: relative;
     display: grid;
-    grid-template-columns: auto 1fr auto;
-    grid-template-areas: "menu stats slots" "pill pill pill";
+    grid-template-columns: auto 1fr;
+    grid-template-areas: "menu stats" "pill pill";
     gap: 0 8px;
     align-items: center;
     padding: 6px 4px;
@@ -1495,14 +1531,13 @@ input{user-select:text;-webkit-user-select:text}
   .mode-badge::before { content: none; }
   .stats-badge {
     grid-area: stats;
-    justify-self: center;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 3px;
-    padding: 5px 12px;
+    justify-self: end;
+    flex-direction: row;
+    align-items: center;
+    gap: 14px;
+    padding: 6px 14px;
   }
   .stats-badge .stat-divider { display: none; }
-  .slots-container { grid-area: slots; justify-self: end; gap: 2px; }
 
   /* ☰ menüsü: ikincil düğmeler açılır panelde */
   .util-buttons {
@@ -1617,6 +1652,9 @@ input{user-select:text;-webkit-user-select:text}
       </div>
 
       <div class="util-buttons">
+        <button class="btn btn-util" id="homeBtn" data-label="Ana menü" title="Ana menü">
+          <span class="btn-icon">🏠</span>
+        </button>
         <button class="btn btn-util" id="fxBtn" data-label="Efekt" title="Arka plan efektlerini aç / kapat">
           <span class="btn-icon">✨</span>
         </button>
@@ -1666,6 +1704,7 @@ input{user-select:text;-webkit-user-select:text}
   </header>
 
   <!-- Board Area (Sol Satır Numaraları Sütunu + 10 Oyun Sütunu) -->
+  <div id="slotsDock" class="slots-dock"></div>
   <main class="board-container">
     <div class="board" id="board" role="grid" aria-label="Deniz Dizisi Oyun Alanı"></div>
   </main>
@@ -1677,6 +1716,35 @@ input{user-select:text;-webkit-user-select:text}
 
 <!-- Floating Toast Notification -->
 <div class="toast-banner" id="toast" role="status" aria-live="polite"></div>
+
+<!-- Ana Menü -->
+<div class="home-screen launch" id="homeScreen" role="dialog" aria-label="Ana menü">
+  <button class="home-close" id="homeClose" aria-label="Kapat">✕</button>
+  <div class="home-card">
+    <div class="home-logo">🌊</div>
+    <h2 class="home-title">Deniz Dizisi</h2>
+    <p class="home-sub">Deniz canlılarını sütunlarda topla</p>
+    <button class="btn btn-primary home-btn" id="homeContinue" style="display:none;">
+      <span class="home-btn-main">▶ Devam Et</span>
+      <span class="home-btn-sub" id="homeContinueSub"></span>
+    </button>
+    <button class="btn home-btn" id="homeRandom">
+      <span class="home-btn-main">🎲 Yeni Oyun</span>
+      <span class="home-btn-sub">Her seferinde farklı bir dağıtım</span>
+    </button>
+    <button class="btn home-btn home-btn-daily" id="homeDaily">
+      <span class="home-btn-main">📅 Günün Oyunu</span>
+      <span class="home-btn-sub" id="homeDailySub">Herkes için aynı • sıralamaya gir</span>
+    </button>
+    <button class="btn home-btn" id="homeBoard">
+      <span class="home-btn-main">📊 Günün Sıralaması</span>
+    </button>
+    <div class="home-row">
+      <button class="btn home-btn" id="homeAchieve"><span class="home-btn-main">🏅 Başarımlar</span></button>
+      <button class="btn home-btn" id="homeHelp"><span class="home-btn-main">❓ Nasıl Oynanır?</span></button>
+    </div>
+  </div>
+</div>
 
 <!-- Welcome / Guide Modal -->
 <div class="modal-overlay" id="guideModal">
@@ -2685,6 +2753,7 @@ function checkWin(){
     window._lastWin = { moves: currentMoves, sec: currentSec, daily: currentGameMode === 'daily',
       log: actionLog.slice(), startDeal: startDeal, dailyKey: currentDailyKey, logValid: logValid && !!currentDailyKey };
     if(window.setupWinBoard) window.setupWinBoard();
+    if(currentGameMode === 'daily' && currentDailyKey){ try { localStorage.setItem('deniz_daily_done', currentDailyKey); } catch(e){} }
     var wd = document.getElementById("winDaily");
     if(wd) wd.style.display = (currentGameMode === 'daily') ? "none" : "inline-flex";
     document.getElementById("winModal").classList.add("active");
@@ -3907,7 +3976,7 @@ document.addEventListener('visibilitychange', function(){
     if(timerInterval){ clearInterval(timerInterval); timerInterval = null; timerStarted = false; }
   } else {
     if(AudioEngine.enabled) AudioEngine.startAmbient();
-    if(secondsElapsed > 0 && !gameOver) startTimerOnce();
+    if(secondsElapsed > 0 && !gameOver && !(window.homeIsOpen && window.homeIsOpen())) startTimerOnce();
   }
 });
 
@@ -4115,6 +4184,8 @@ if(!loadSavedState()){
   var tierBottom = document.querySelector('.header-tier-bottom');
   var bar = document.getElementById('bottomBar');
   var utils = document.querySelector('.util-buttons');
+  var slotsEl = document.getElementById('slots');
+  var dock = document.getElementById('slotsDock');
   var mq = window.matchMedia ? window.matchMedia('(max-width: 600px)') : null;
 
   function closeMenu(){
@@ -4126,8 +4197,10 @@ if(!loadSavedState()){
     if(!actions || !tierBottom || !bar) return;
     if(mq && mq.matches){
       if(actions.parentNode !== bar) bar.appendChild(actions);
+      if(slotsEl && dock && slotsEl.parentNode !== dock) dock.appendChild(slotsEl);
     } else {
       if(actions.parentNode !== tierBottom) tierBottom.insertBefore(actions, tierBottom.firstChild);
+      if(slotsEl && slotsEl.parentNode !== tierBottom) tierBottom.appendChild(slotsEl);
       closeMenu();
     }
   }
@@ -4153,6 +4226,90 @@ if(!loadSavedState()){
     else if(mq.addListener) mq.addListener(place);
   }
   place();
+})();
+</script>
+<script>
+/* ==============================================================
+   ANA MENÜ (mobilde açılışta gösterilir; 🏠 düğmesiyle her zaman açılabilir)
+   ============================================================== */
+(function(){
+  function $(id){ return document.getElementById(id); }
+  var home = $('homeScreen');
+  if(!home) return;
+  var small = window.matchMedia ? window.matchMedia('(max-width: 600px)').matches : false;
+  var armed = null, armTimer = null;
+
+  function isOpen(){ return home.classList.contains('active'); }
+  window.homeIsOpen = isOpen;
+  function todayKey(){ return DenizCore.istanbulDateKey(); }
+  function inProgress(){ return !gameOver && moves > 0; }
+
+  function disarm(){
+    if(armed){
+      armed.classList.remove('armed');
+      armed.querySelector('.home-btn-main').textContent = armed._label;
+      armed = null;
+    }
+    if(armTimer){ clearTimeout(armTimer); armTimer = null; }
+  }
+  /* Devam eden oyun varsa yanlışlıkla silinmesin: ilk dokunuş uyarır, ikincisi onaylar */
+  function guard(btn, action){
+    if(!inProgress()){ action(); return; }
+    if(armed === btn){ disarm(); action(); return; }
+    disarm();
+    var main = btn.querySelector('.home-btn-main');
+    btn._label = main.textContent;
+    main.textContent = 'Devam eden oyun silinsin mi? Tekrar dokun';
+    btn.classList.add('armed');
+    armed = btn;
+    armTimer = setTimeout(disarm, 3500);
+  }
+
+  function refresh(){
+    disarm();
+    var cont = $('homeContinue');
+    if(inProgress()){
+      cont.style.display = 'flex';
+      $('homeContinueSub').textContent = moves + ' hamle • ' + formatTime(secondsElapsed) + ' • ' + (currentGameMode === 'daily' ? 'Günün Oyunu' : 'Rastgele oyun');
+    } else {
+      cont.style.display = 'none';
+    }
+    var kp = todayKey().split('-'), done = false;
+    try { done = localStorage.getItem('deniz_daily_done') === todayKey(); } catch(e){}
+    $('homeDailySub').textContent = done
+      ? '✓ Bugün tamamladın • tekrar deneyebilirsin'
+      : (+kp[2]) + '.' + (+kp[1]) + ' • Herkes için aynı • sıralamaya gir';
+  }
+  function show(){
+    refresh();
+    if(!gameOver) stopTimer(); // menüdeyken süre ilerlemesin
+    home.classList.add('active');
+  }
+  function hide(resume){
+    home.classList.remove('active');
+    disarm();
+    if(resume !== false && inProgress()) startTimerOnce();
+  }
+
+  $('homeContinue').onclick = function(){ hide(true); };
+  $('homeClose').onclick = function(){ hide(true); };
+  $('homeRandom').onclick = function(){
+    guard(this, function(){ hide(false); startNormalGame(); });
+  };
+  $('homeDaily').onclick = function(){
+    if(currentGameMode === 'daily' && inProgress() && currentDailyKey === todayKey()){ hide(true); return; }
+    guard(this, function(){ hide(false); startDailyGame(); });
+  };
+  $('homeBoard').onclick = function(){ $('boardBtn').click(); };
+  $('homeAchieve').onclick = function(){ $('achieveBtn').click(); };
+  $('homeHelp').onclick = function(){ $('helpBtn').click(); };
+  if($('homeBtn')) $('homeBtn').onclick = show;
+  window.addEventListener('keydown', function(e){
+    if(e.key === 'Escape' && isOpen()) hide(true);
+  });
+
+  home.classList.remove('launch');
+  if(small) show();
 })();
 </script>
 </body>
