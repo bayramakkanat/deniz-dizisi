@@ -1453,6 +1453,10 @@ body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;backgro
 /* ---- Günün Oyunu sıralaması ---- */
 input{user-select:text;-webkit-user-select:text}
 #dailyPill{cursor:pointer}
+/* Sade oyun ekranı: bu işlevler ana menüde (klavye kısayolları çalışmaya devam eder) */
+#boardBtn,#achieveBtn,#helpBtn,#fs{display:none !important}
+@media (hover:hover) and (pointer:fine){#fxBtn,#hapticBtn{display:none !important}}
+.pill-label{display:inline}
 .win-board{width:100%;display:flex;flex-direction:column;gap:8px;margin:2px 0 8px}
 .win-board-status{font-size:13px;line-height:1.45;color:#cbd5e1;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;text-align:center}
 .win-board-status.ok{color:#ffd166;border-color:rgba(255,209,102,.5);background:rgba(255,209,102,.1);font-weight:700}
@@ -1512,8 +1516,8 @@ input{user-select:text;-webkit-user-select:text}
   .game-header {
     position: relative;
     display: grid;
-    grid-template-columns: auto 1fr;
-    grid-template-areas: "menu stats" "pill pill";
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "menu pill stats";
     gap: 0 8px;
     align-items: center;
     padding: 6px 4px;
@@ -1524,24 +1528,30 @@ input{user-select:text;-webkit-user-select:text}
   .btn-menu {
     display: inline-flex;
     grid-area: menu;
-    width: 42px;
-    min-width: 42px;
-    height: 42px;
+    width: 46px;
+    min-width: 46px;
+    height: 46px;
     padding: 0 !important;
     font-size: 20px;
   }
   .brand { display: contents; }
   .brand-icon, .brand-title { display: none; }
-  #dailyPill { grid-area: pill; justify-self: center; margin-top: 4px; font-size: 11px; padding: 2px 10px; }
+  #dailyPill { grid-area: pill; justify-self: center; font-size: 14px; padding: 8px 14px; border-radius: 12px; min-height: 36px; }
+  .pill-label { display: none; }
+  @media (min-width: 400px) { .pill-label { display: inline; } }
   .mode-badge::before { content: none; }
   .stats-badge {
     grid-area: stats;
     justify-self: end;
     flex-direction: row;
     align-items: center;
-    gap: 14px;
-    padding: 6px 14px;
+    gap: 16px;
+    padding: 8px 16px;
+    min-height: 46px;
+    border-radius: 12px;
   }
+  .stats-badge .stat-icon { font-size: 20px; }
+  .stats-badge .stat-value { font-size: 19px; }
   .stats-badge .stat-divider { display: none; }
 
   /* ☰ menüsü: ikincil düğmeler açılır panelde */
@@ -1567,7 +1577,7 @@ input{user-select:text;-webkit-user-select:text}
     min-width: 0;
     height: auto;
     min-height: 58px;
-    flex: 1 1 28%;
+    flex: 1 1 22%;
     flex-direction: column;
     gap: 3px;
     padding: 8px 4px !important;
@@ -1635,7 +1645,7 @@ input{user-select:text;-webkit-user-select:text}
       <div class="brand">
         <span class="brand-icon">🌊</span>
         <h1 class="brand-title">Sea Stack</h1>
-        <span id="dailyPill" class="mode-badge" style="display:none;" title="Günün Özel Oyunu">📅 Günün Oyunu</span>
+        <span id="dailyPill" class="mode-badge" style="display:none;" title="Günün Özel Oyunu">📅 <span class="pill-label">Günün Oyunu</span></span>
       </div>
       
       <div class="stats-badge" title="Hamle Sayısı, Geçen Süre ve En İyi Derece">
@@ -2312,6 +2322,21 @@ function renderAchievementsModal(){
 var randomGenerator = Math.random;
 var currentDailyKey = null;
 
+function renderDailyPill(){
+  var dp = document.getElementById("dailyPill");
+  if(!dp) return;
+  dp.textContent = "";
+  dp.appendChild(document.createTextNode("📅 "));
+  var lab = document.createElement("span");
+  lab.className = "pill-label";
+  lab.textContent = "Günün Oyunu ";
+  dp.appendChild(lab);
+  if(currentDailyKey){
+    var kp = currentDailyKey.split('-');
+    dp.appendChild(document.createTextNode((+kp[2]) + "." + (+kp[1])));
+  }
+}
+
 function startDailyGame(){
   currentGameMode = "daily";
   currentDailyKey = DenizCore.istanbulDateKey();
@@ -2319,8 +2344,7 @@ function startDailyGame(){
   var dailyPill = document.getElementById("dailyPill");
   if(dailyPill) {
     dailyPill.style.display = "inline-flex";
-    var kp = currentDailyKey.split('-');
-    dailyPill.textContent = "📅 Günün Oyunu (" + (+kp[2]) + "." + (+kp[1]) + ")";
+    renderDailyPill();
   }
   init();
 }
@@ -2452,6 +2476,7 @@ function loadSavedState(){
       logValid = Array.isArray(data.log) && !!startDeal;
       var dp = document.getElementById("dailyPill");
       if(dp) dp.style.display = currentGameMode === "daily" ? "inline-flex" : "none";
+      if(dp && currentGameMode === "daily") renderDailyPill();
       hist = [];
       sel = null;
       if(secondsElapsed > 0) startTimerOnce();
