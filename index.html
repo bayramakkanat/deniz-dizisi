@@ -2362,7 +2362,7 @@ function tapCol(c,i){
     if(sel.kind==="col" && sel.c===c){
       sel=null;
       AudioEngine.play('select');
-      draw();
+      refreshSelection();
       return;
     }
     var t=selTiles(), d=cols[c], top=d[d.length-1];
@@ -2389,7 +2389,7 @@ function tapCol(c,i){
     } else {
       AudioEngine.play('error');
     }
-    draw();
+    refreshSelection();
     return;
   }
   var p=pick(c,i);
@@ -2397,7 +2397,7 @@ function tapCol(c,i){
     sel=p;
     AudioEngine.play('select');
   }
-  draw();
+  refreshSelection();
 }
 
 function tapSlot(i){
@@ -2407,7 +2407,7 @@ function tapSlot(i){
     if(sel.kind==="slot" && sel.i===i){
       sel=null;
       AudioEngine.play('select');
-      draw();
+      refreshSelection();
       return;
     }
     if(slots[i]===null && selTiles().length===1){
@@ -2432,13 +2432,13 @@ function tapSlot(i){
       AudioEngine.play('error');
       showToast("Geçici yuvaya sadece tek bir canlı koyabilirsiniz.");
     }
-    draw();
+    refreshSelection();
     return;
   }
   if(slots[i]!==null){
     sel={kind:"slot", i:i};
     AudioEngine.play('select');
-    draw();
+    refreshSelection();
   }
 }
 
@@ -3137,6 +3137,7 @@ function draw(){
           tile.style.animationDelay = dropDelay + "s";
         }
         tile.style.setProperty('--alive-delay', ((c * 0.35 + i * 0.18) % 3.5).toFixed(2) + "s");
+        tile.dataset.i = i;
         
         if(l[i].up){
           tile.innerHTML = SH[l[i].s];
@@ -3225,6 +3226,8 @@ function draw(){
   if(!gameOver && moves > 0) saveState();
   if(droppingInfo){
     var cleanDelay = droppingInfo.type === 'deal' ? 2000 : 600;
+    // Animasyon bilgisi yalnızca bu çizimde kullanılır; sonraki çizimlerde animasyon yeniden oynamasın
+    droppingInfo = null;
     if(window._dropTimer) clearTimeout(window._dropTimer);
     window._dropTimer = setTimeout(function(){
       droppingInfo = null;
@@ -3234,6 +3237,30 @@ function draw(){
       });
     }, cleanDelay);
   }
+}
+
+/* Seçim değişince tahtayı baştan kurmadan yalnızca vurguları günceller
+   (tam yeniden çizim animasyonları sıfırlıyor ve görüntülerin anlık kaybolmasına yol açıyordu) */
+function refreshSelection(){
+  var t = sel ? selTiles() : null;
+  var colEls = document.querySelectorAll('#board .col');
+  cols.forEach(function(l, c){
+    var colEl = colEls[c];
+    if(!colEl) return;
+    var top = l[l.length-1];
+    var valid = !!sel && (!l.length || (top && top.up && top.s === t[0].s && l.length + t.length <= PER));
+    colEl.classList.toggle('drop-valid', valid);
+    colEl.querySelectorAll('.t[data-i]').forEach(function(el){
+      el.classList.toggle('sel', !!sel && sel.kind === 'col' && sel.c === c && (+el.dataset.i) >= sel.i);
+    });
+  });
+  var slotEls = document.querySelectorAll('#slots .slot:not(.locked)');
+  slots.forEach(function(s, i){
+    var el = slotEls[i];
+    if(!el) return;
+    el.classList.toggle('sel', !!sel && sel.kind === 'slot' && sel.i === i);
+    el.classList.toggle('drop-valid', !!sel && s === null && t.length === 1);
+  });
 }
 
 /* 11. Satır ile 5. Kilitli Yuva Arasındaki Etkileşimli Vurgulama */
