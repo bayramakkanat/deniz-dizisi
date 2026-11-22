@@ -1,2 +1,4 @@
 assets-orijinal/
 *.tmp
+*.bak
+_arsiv/
