@@ -1397,6 +1397,11 @@ body.paused *{animation-play-state:paused !important}
 .col.completed-col{animation:colGlow 2.4s ease-in-out infinite alternate}
 @keyframes colGlow{0%{box-shadow:0 0 10px rgba(255,209,102,.25)}100%{box-shadow:0 0 22px rgba(255,209,102,.55)}}
 body.calm .bubbles-container,body.calm .god-rays,body.calm .swimmer{display:none}
+/* Dokunmatik cihazlarda (tablet) ağır efektler kapalı: blur + blend-mode + arka plan bulanıklığı her dokunuşta tüm ekranı kırpıştırıyordu */
+@media (pointer: coarse){
+  .game-header,.board,.toast-banner,.modal-overlay{backdrop-filter:none;-webkit-backdrop-filter:none}
+  .ray{mix-blend-mode:normal;filter:none}
+}
 body.calm .creature,body.calm .col.completed-col{animation:none !important}
 #timer.stat-value{display:inline-block;min-width:3.3em;text-align:center}
 #mv.stat-value{display:inline-block;min-width:2.2ch;text-align:center}
@@ -4041,8 +4046,8 @@ updateBestTimeDisplay();
 var fxBtn = document.getElementById('fxBtn');
 function applyFx(){
   var pref = localStorage.getItem('deniz_fx');
-  // Telefonda efektler varsayılan olarak kapalı (sakin görünüm); ✨ ile açılabilir
-  var on = pref ? pref !== 'off' : !(window.matchMedia && window.matchMedia('(max-width: 600px)').matches);
+  // Telefonda ve dokunmatik cihazlarda (tablet dahil) efektler varsayılan olarak kapalı (sakin görünüm); ✨ ile açılabilir
+  var on = pref ? pref !== 'off' : !(window.matchMedia && window.matchMedia('(max-width: 600px), (pointer: coarse)').matches);
   document.body.classList.toggle('calm', !on);
   fxBtn.style.opacity = on ? 1 : 0.5;
 }
