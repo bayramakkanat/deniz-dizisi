@@ -1102,8 +1102,10 @@ body {
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   z-index: 2000;
   opacity: 0;
   pointer-events: none;
@@ -1118,6 +1120,7 @@ body {
   background: linear-gradient(150deg, #132e5c 0%, #0c1d3b 100%);
   border: 1px solid rgba(100, 180, 255, 0.3);
   border-radius: 20px;
+  margin: auto;
   width: 100%;
   max-width: 520px;
   padding: 28px 24px 22px;
@@ -1416,7 +1419,7 @@ body.calm .creature,body.calm .col.completed-col{animation:none !important}
 .win-actions-row .btn{flex:1}
 body.victory .bubbles-container,body.victory .god-rays,body.victory .swimmer{display:none}
 body.victory .creature,body.victory .col.completed-col{animation-play-state:paused !important}
-body.victory #winModal{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(3,10,22,.9)}
+#winModal{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(3,10,22,.9)} /* bulanıklık her zaman kapalı: pencere kapanırken blur'un geri açılması Android'de tahtayı boş çiziyordu */
 /* ---- Mobil arayüz bileşenleri (yalnızca küçük ekranda görünür) ---- */
 .bottom-bar{display:none}
 .btn-menu{display:none}
@@ -1996,7 +1999,7 @@ var TR_NAMES = {
 };
 var PER = 12, NC = 10, NS = 4;
 var SH = FB.map(function(f,i){
-  return '<img src="assets/'+NAMES[i]+'.png" class="creature creature-'+NAMES[i]+'" alt="'+TR_NAMES[NAMES[i]]+'" draggable="false" onerror="this.outerHTML=FB['+i+']">';
+  return '<img src="assets/'+NAMES[i]+'.png" class="creature creature-'+NAMES[i]+'" alt="'+TR_NAMES[NAMES[i]]+'" decoding="sync" draggable="false" onerror="this.outerHTML=FB['+i+']">';
 });
 
 /* ==============================================================
@@ -3134,10 +3137,20 @@ function applyHint(){
 /* ==============================================================
    UI RENDERING (DRAW)
    ============================================================== */
+/* Değişmeyen sütun ve yuvalar DOM'da olduğu gibi bırakılır; her hamlede bütün tahtayı sıfırdan kurmak
+   görüntülerin yeniden yüklenmesine ve hareket animasyonlarının baştan başlamasına (kırpışma) yol açıyordu. */
+var colCache = [], slotCache = [];
+function syncChildren(parent, list){
+  for(var k = 0; k < list.length; k++){
+    var cur = parent.children[k];
+    if(cur !== list[k]) parent.insertBefore(list[k], cur || null);
+  }
+  while(parent.children.length > list.length) parent.removeChild(parent.lastChild);
+}
 function draw(){
   // 1. Render Temporary Slots (Sağ Üst Kısım)
   var sl = document.getElementById("slots");
-  sl.innerHTML = "";
+  var slotEls = [];
   
   var activeCount = 0;
   slots.forEach(function(s, i){
@@ -3145,6 +3158,13 @@ function draw(){
     var btn = document.createElement("button");
     var isSel = sel && sel.kind === "slot" && sel.i === i;
     var isSlotDrop = droppingInfo && droppingInfo.type === 'slot' && droppingInfo.i === i;
+    var slotSig = [s, !!(unlockedThisGame && i === 4)].join('|');
+    if(!isSlotDrop && slotCache[i] && slotCache[i].sig === slotSig){
+      var se = slotCache[i].el;
+      se.classList.toggle('sel', !!isSel);
+      se.classList.toggle('drop-valid', !!(sel && s === null && selTiles().length === 1));
+      slotEls.push(se); return;
+    }
     btn.className = "slot" + (isSel ? " sel" : "") + (isSlotDrop ? " sway-drop" : "");
     if(unlockedThisGame && i === 4) btn.classList.add("just-unlocked");
     btn.style.setProperty('--alive-delay', (i * 0.4).toFixed(2) + "s");
@@ -3203,7 +3223,8 @@ function draw(){
         }
       }
     };
-    sl.appendChild(btn);
+    slotCache[i] = { sig: slotSig, el: btn };
+    slotEls.push(btn);
   });
 
   // Render 5th slot as LOCKED if not unlocked yet
@@ -3220,8 +3241,10 @@ function draw(){
     };
     lockedSlot.onmouseenter = function(){ highlightGoldLink(true); };
     lockedSlot.onmouseleave = function(){ highlightGoldLink(false); };
-    sl.appendChild(lockedSlot);
+    slotEls.push(lockedSlot);
   }
+
+  syncChildren(sl, slotEls);
 
   // Update Slots Badge (eğer DOM'da mevcutsa)
   var badgeEl = document.getElementById("slotsBadge");
@@ -3232,7 +3255,7 @@ function draw(){
 
   // 2. Render Board (Sütun 0: Sol Satır Numaraları + Sütun 1..10: Oyun Sütunları)
   var b = document.getElementById("board");
-  b.innerHTML = "";
+  var desired = [];
   
   // Sol Taraftaki Satır Numaraları (Sütun 0)
   var rowLabelsEl = document.createElement("div");
@@ -3263,12 +3286,27 @@ function draw(){
     }
     rowLabelsEl.appendChild(rDiv);
   }
-  b.appendChild(rowLabelsEl);
+  desired.push(rowLabelsEl);
   
   cols.forEach(function(l, c){
     var colEl = document.createElement("div");
     var isEmpty = !l.length;
     var isCompleted = l.length === PER && l.every(function(card){ return card.up && card.s === l[0].s; });
+    var colDropValid = false;
+    if(sel){
+      var t0 = selTiles(), top0 = l[l.length-1];
+      colDropValid = !l.length || !!(top0 && top0.up && top0.s === t0[0].s && l.length + t0.length <= PER);
+    }
+    var colAnimating = droppingInfo && (droppingInfo.type === 'deal' || (droppingInfo.type === 'col' && droppingInfo.c === c));
+    var colSig = l.map(function(t){ return t.s + (t.up ? 'u' : 'd'); }).join(',') + '|' + (maxSlots >= NS + 1 ? 1 : 0);
+    if(!colAnimating && colCache[c] && colCache[c].l === l && colCache[c].sig === colSig){
+      var ce = colCache[c].el;
+      ce.classList.toggle('drop-valid', colDropValid);
+      ce.querySelectorAll('.t[data-i]').forEach(function(el){
+        el.classList.toggle('sel', !!sel && sel.kind === 'col' && sel.c === c && (+el.dataset.i) >= sel.i);
+      });
+      desired.push(ce); return;
+    }
 
     colEl.className = "col" + (isEmpty ? " empty-lane" : "") + (isCompleted ? " completed-col" : "");
     colEl.tabIndex = 0;
@@ -3413,8 +3451,11 @@ function draw(){
       })(i);
     }
 
-    b.appendChild(colEl);
+    colCache[c] = { sig: colSig, l: l, el: colEl };
+    desired.push(colEl);
   });
+
+  syncChildren(b, desired);
 
   // 4. Update Controls & Stats
   document.getElementById("mv").textContent = moves;
@@ -3795,6 +3836,7 @@ document.getElementById("winDaily").onclick = function(){
 document.getElementById("winView").onclick = function(){
   winModal.classList.remove("active");
   stopConfetti();
+  healBoard();
   showToast("Yeni oyun için 'Yeni' düğmesine basın.");
 };
 
@@ -3948,6 +3990,16 @@ function renderConfetti(now){
     confettiAnimId = null;
     confettiCtx.clearRect(0, 0, W, H);
   }
+}
+
+/* Pencere kapanınca tahta görünmüyorsa (boyama hatası / boş DOM) kendini onarır */
+function healBoard(){
+  requestAnimationFrame(function(){
+    var b = document.getElementById('board');
+    if(!b) return;
+    if(!b.querySelector('.col') && cols.some(function(l){ return l.length; })){ draw(); return; }
+    b.style.display = 'none'; void b.offsetHeight; b.style.display = '';
+  });
 }
 
 function stopConfetti(){
